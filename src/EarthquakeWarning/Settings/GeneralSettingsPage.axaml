@@ -177,6 +177,8 @@
                   Spacing="10">
         <Button x:Name="AddSimulationButton"
                 Content="新增模拟报"/>
+        <Button x:Name="DefaultSimulationButton"
+                Content="默认预警"/>
         <Button x:Name="SaveButton"
                 Content="保存配置"/>
         <Button x:Name="RunSimulationButton"

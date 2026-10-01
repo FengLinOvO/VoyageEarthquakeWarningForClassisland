@@ -1,6 +1,6 @@
 id: voyage.EarthquakeWarning
 name: 地震预警
-description: 一个现代化UI的地震预警插件，提供 Voyage Project API 与 MIUI API 两种数据源
+description: 一个现代化UI的地震预警插件，提供多种数据源选择
 entranceAssembly: "Voyage.EarthquakeWarning.dll"
 url: https://github.com/FengLinOvO/VoyageEarthquakeWarning/ForClassisland
 repoOwner: FengLinOvO

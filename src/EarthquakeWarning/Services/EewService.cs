@@ -21,69 +21,96 @@ public sealed partial class EewService : BackgroundService
 
     private readonly WarningEngine _engine;
     private string? _lastMiuiKey;
+    private CancellationTokenSource _switchSource = new();
 
     public EewService(WarningEngine engine)
     {
         _engine = engine;
     }
 
+    public void Restart()
+    {
+        var previous = _switchSource;
+        _switchSource = new CancellationTokenSource();
+        _lastMiuiKey = null;
+        previous.Cancel();
+    }
+
+    private static ApiSource CurrentSource =>
+        Plugin.Current!.Settings.ApiSource;
+
+    private static void SetStatus(ApiSource source, string text)
+    {
+        if (Plugin.Current!.Settings.ApiSource == source)
+            Plugin.Current!.Settings.ApiConnectionTimeText = text;
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            using var linked =
+                CancellationTokenSource.CreateLinkedTokenSource(
+                    stoppingToken,
+                    _switchSource.Token);
+
             try
             {
-                if (Plugin.Current!.Settings.ApiSource == ApiSource.Miui)
-                    await IterateMiuiAsync(stoppingToken);
+                if (CurrentSource == ApiSource.Miui)
+                    await IterateMiuiAsync(linked.Token);
                 else
-                    await IterateVoyageAsync(stoppingToken);
+                    await IterateVoyageAsync(linked.Token);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 break;
+            }
+            catch (OperationCanceledException)
+            {
             }
         }
     }
 
     private static DateTime NowBeijing() => DateTime.UtcNow.AddHours(8);
 
-    private async Task IterateVoyageAsync(CancellationToken stoppingToken)
+    private async Task IterateVoyageAsync(CancellationToken token)
     {
-        var token =
+        var apiToken =
             Plugin.Current!.Settings.ApiToken?.Trim() ?? "";
 
-        if (token.Length == 0)
+        if (apiToken.Length == 0)
         {
-            Plugin.Current!.Settings.ApiConnectionTimeText =
-                TokenMissingText;
+            SetStatus(ApiSource.Voyage, TokenMissingText);
 
-            await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(3), token);
             return;
         }
 
         try
         {
             using var ws = new ClientWebSocket();
-            await ws.ConnectAsync(new Uri(ApiUrl), stoppingToken);
-            Plugin.Current!.Settings.ApiConnectionTimeText =
-                $"API连接于：{NowBeijing():yyyy-MM-dd HH:mm:ss}";
+            await ws.ConnectAsync(new Uri(ApiUrl), token);
+            token.ThrowIfCancellationRequested();
+
+            SetStatus(
+                ApiSource.Voyage,
+                $"API连接于：{NowBeijing():yyyy-MM-dd HH:mm:ss}");
 
             await ws.SendAsync(
-                Encoding.UTF8.GetBytes(token),
+                Encoding.UTF8.GetBytes(apiToken),
                 WebSocketMessageType.Text,
                 true,
-                stoppingToken);
+                token);
 
-            await ReceiveLoopAsync(ws, stoppingToken);
+            await ReceiveLoopAsync(ws, token);
         }
-        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
             throw;
         }
         catch (Exception ex)
         {
-            Plugin.Current!.Settings.ApiConnectionTimeText =
-                $"连接失败：{ex.Message}";
+            SetStatus(ApiSource.Voyage, $"连接失败：{ex.Message}");
         }
     }
 
@@ -97,10 +124,11 @@ public sealed partial class EewService : BackgroundService
 
             if (result.MessageType == WebSocketMessageType.Close)
             {
-                Plugin.Current!.Settings.ApiConnectionTimeText =
+                SetStatus(
+                    ApiSource.Voyage,
                     string.IsNullOrWhiteSpace(result.CloseStatusDescription)
                         ? $"连接已被服务端关闭（{result.CloseStatus}）"
-                        : $"连接已被服务端关闭：{result.CloseStatusDescription}";
+                        : $"连接已被服务端关闭：{result.CloseStatusDescription}");
 
                 break;
             }
@@ -146,21 +174,24 @@ public sealed partial class EewService : BackgroundService
         }
     }
 
-    private async Task IterateMiuiAsync(CancellationToken stoppingToken)
+    private async Task IterateMiuiAsync(CancellationToken token)
     {
         try
         {
-            await RequestMiuiAsync(stoppingToken);
-            await Task.Delay(MiuiPollInterval, stoppingToken);
+            await RequestMiuiAsync(token);
+            await Task.Delay(MiuiPollInterval, token);
         }
-        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        catch (TaskCanceledException) when (!token.IsCancellationRequested)
+        {
+            SetStatus(ApiSource.Miui, "最近验证失败：请求超时");
+        }
+        catch (OperationCanceledException)
         {
             throw;
         }
         catch (Exception ex)
         {
-            Plugin.Current!.Settings.ApiConnectionTimeText =
-                $"最近验证失败：{ex.Message}";
+            SetStatus(ApiSource.Miui, $"最近验证失败：{ex.Message}");
         }
     }
 
@@ -179,9 +210,11 @@ public sealed partial class EewService : BackgroundService
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync(token);
+        token.ThrowIfCancellationRequested();
 
-        Plugin.Current!.Settings.ApiConnectionTimeText =
-            $"最近验证时间：{NowBeijing():yyyy-MM-dd HH:mm:ss}";
+        SetStatus(
+            ApiSource.Miui,
+            $"最近验证时间：{NowBeijing():yyyy-MM-dd HH:mm:ss}");
 
         MiuiEnvelope? envelope;
 

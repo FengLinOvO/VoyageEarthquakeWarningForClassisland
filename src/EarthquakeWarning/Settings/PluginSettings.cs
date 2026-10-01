@@ -36,6 +36,9 @@ public sealed class PluginSettings : ObservableObject
     public string ApiRecentDataText { get => _apiRecentDataText; set => SetProperty(ref _apiRecentDataText, value); }
 
     public List<SimulationReport> Simulations { get; set; } =
+        CreateDefaultSimulations();
+
+    public static List<SimulationReport> CreateDefaultSimulations() =>
     [
         new SimulationReport
         {

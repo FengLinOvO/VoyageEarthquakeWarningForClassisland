@@ -65,6 +65,8 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
                 Settings.ApiSource == ApiSource.Voyage;
 
             Store.Save();
+
+            Eew?.Restart();
         };
 
         TokenBox.LostFocus += (_, _) =>
@@ -77,15 +79,27 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
 
         AddSimulationButton.Click += (_, _) =>
         {
-            var last = Settings.Simulations.LastOrDefault();
-
             Settings.Simulations.Add(
                 new SimulationReport
                 {
+                    PlaceName = "",
+                    Longitude = 0,
+                    Latitude = 0,
+                    Magnitude = 0,
+                    EpiIntensity = 0,
+                    Depth = 0,
                     Updates = Settings.Simulations.Count + 1,
-                    AlertDelaySeconds =
-                        (last?.AlertDelaySeconds ?? 0) + 5
+                    AlertDelaySeconds = 0
                 });
+
+            RenderSimulations();
+            Store.Save();
+        };
+
+        DefaultSimulationButton.Click += (_, _) =>
+        {
+            Settings.Simulations =
+                PluginSettings.CreateDefaultSimulations();
 
             RenderSimulations();
             Store.Save();
