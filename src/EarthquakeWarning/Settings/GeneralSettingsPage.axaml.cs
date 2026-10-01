@@ -79,18 +79,7 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
 
         AddSimulationButton.Click += (_, _) =>
         {
-            Settings.Simulations.Add(
-                new SimulationReport
-                {
-                    PlaceName = "",
-                    Longitude = 0,
-                    Latitude = 0,
-                    Magnitude = 0,
-                    EpiIntensity = 0,
-                    Depth = 0,
-                    Updates = Settings.Simulations.Count + 1,
-                    AlertDelaySeconds = 0
-                });
+            Settings.Simulations.Add(new SimulationReport());
 
             RenderSimulations();
             Store.Save();
@@ -336,20 +325,19 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
             panel.Children.Add(
                 Field(
                     "发报延迟（秒，距发震）",
-                    sim.AlertDelaySeconds.ToString(
+                    sim.AlertDelaySeconds?.ToString(
                         "0.0",
-                        CultureInfo.InvariantCulture),
+                        CultureInfo.InvariantCulture) ?? "",
                     x =>
                     {
-                        if (double.TryParse(
+                        sim.AlertDelaySeconds =
+                            double.TryParse(
                                 x,
                                 NumberStyles.Float,
                                 CultureInfo.InvariantCulture,
-                                out var v))
-                        {
-                            sim.AlertDelaySeconds =
-                                Math.Max(0, v);
-                        }
+                                out var v)
+                                ? Math.Max(0, v)
+                                : null;
                     }));
 
             panel.Children.Add(
@@ -361,81 +349,81 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
             panel.Children.Add(
                 Field(
                     "经度",
-                    sim.Longitude.ToString(
+                    sim.Longitude?.ToString(
                         "0.######",
-                        CultureInfo.InvariantCulture),
+                        CultureInfo.InvariantCulture) ?? "",
                     x =>
                     {
-                        if (double.TryParse(
+                        sim.Longitude =
+                            double.TryParse(
                                 x,
                                 NumberStyles.Float,
                                 CultureInfo.InvariantCulture,
-                                out var v))
-                        {
-                            sim.Longitude = v;
-                        }
+                                out var v)
+                                ? v
+                                : null;
                     }));
 
             panel.Children.Add(
                 Field(
                     "纬度",
-                    sim.Latitude.ToString(
+                    sim.Latitude?.ToString(
                         "0.######",
-                        CultureInfo.InvariantCulture),
+                        CultureInfo.InvariantCulture) ?? "",
                     x =>
                     {
-                        if (double.TryParse(
+                        sim.Latitude =
+                            double.TryParse(
                                 x,
                                 NumberStyles.Float,
                                 CultureInfo.InvariantCulture,
-                                out var v))
-                        {
-                            sim.Latitude = v;
-                        }
+                                out var v)
+                                ? v
+                                : null;
                     }));
 
             panel.Children.Add(
                 Field(
                     "震级",
-                    sim.Magnitude.ToString(
+                    sim.Magnitude?.ToString(
                         "0.0",
-                        CultureInfo.InvariantCulture),
+                        CultureInfo.InvariantCulture) ?? "",
                     x =>
                     {
-                        if (double.TryParse(
+                        sim.Magnitude =
+                            double.TryParse(
                                 x,
                                 NumberStyles.Float,
                                 CultureInfo.InvariantCulture,
-                                out var v))
-                        {
-                            sim.Magnitude = v;
-                        }
+                                out var v)
+                                ? v
+                                : null;
                     }));
 
             panel.Children.Add(
                 Field(
                     "预估最大烈度",
-                    sim.EpiIntensity.ToString(
+                    sim.EpiIntensity?.ToString(
                         "0.0",
-                        CultureInfo.InvariantCulture),
+                        CultureInfo.InvariantCulture) ?? "",
                     x =>
                     {
-                        if (double.TryParse(
+                        sim.EpiIntensity =
+                            double.TryParse(
                                 x,
                                 NumberStyles.Float,
                                 CultureInfo.InvariantCulture,
-                                out var v))
-                        {
-                            sim.EpiIntensity = v;
-                        }
+                                out var v)
+                                ? v
+                                : null;
                     }));
 
             panel.Children.Add(
                 Field(
-                    "震源深度（留空=0）",
+                    "震源深度（千米）",
                     sim.Depth?.ToString(
                         "0.0",
-                        CultureInfo.InvariantCulture) ?? "0",
+                        CultureInfo.InvariantCulture) ?? "",
                     x =>
                     {
                         sim.Depth =
@@ -445,22 +433,21 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
                                 CultureInfo.InvariantCulture,
                                 out var v)
                                 ? v
-                                : 0;
+                                : null;
                     }));
 
             panel.Children.Add(
                 Field(
                     "报数",
-                    sim.Updates.ToString(),
+                    sim.Updates?.ToString(CultureInfo.InvariantCulture) ?? "",
                     x =>
                     {
-                        if (int.TryParse(
+                        sim.Updates =
+                            int.TryParse(
                                 x,
-                                out var v))
-                        {
-                            sim.Updates =
-                                Math.Max(1, v);
-                        }
+                                out var v)
+                                ? Math.Max(1, v)
+                                : null;
                     }));
 
             var remove =

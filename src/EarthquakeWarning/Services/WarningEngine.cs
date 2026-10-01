@@ -258,7 +258,7 @@ public sealed class WarningEngine
                     (DateTime.UtcNow.AddHours(8) - shockTime)
                     .TotalSeconds;
 
-                var wait = sim.AlertDelaySeconds - elapsed;
+                var wait = (sim.AlertDelaySeconds ?? 0) - elapsed;
 
                 if (wait > 0)
                 {
@@ -271,19 +271,19 @@ public sealed class WarningEngine
                 {
                     Id = Guid.NewGuid().ToString("N"),
                     EventId =
-                        $"{simulationEventId}.{sim.Updates:0000}",
+                        $"{simulationEventId}.{(sim.Updates ?? 0):0000}",
                     ShockTime =
                         shockTime.ToString(
                             "yyyy-MM-dd HH:mm:ss"),
-                    Longitude = sim.Longitude,
-                    Latitude = sim.Latitude,
+                    Longitude = sim.Longitude ?? 0,
+                    Latitude = sim.Latitude ?? 0,
                     PlaceName = sim.PlaceName,
-                    Magnitude = sim.Magnitude.ToString(
+                    Magnitude = (sim.Magnitude ?? 0).ToString(
                         "0.0",
                         CultureInfo.InvariantCulture),
-                    EpiIntensity = sim.EpiIntensity,
+                    EpiIntensity = sim.EpiIntensity ?? 0,
                     Depth = sim.Depth,
-                    Updates = sim.Updates
+                    Updates = sim.Updates ?? 0
                 };
 
                 await ProcessAsync(
