@@ -38,8 +38,6 @@ public static class GeoDistance
 
 public static class WaveArrivalCalculator
 {
-
-
     public const double DefaultWaveVelocityKmPerSecond = 3.5;
 
     public static double GetCountdownSeconds(double distanceKm, DateTime shockTimeBeijing, DateTime nowBeijing)

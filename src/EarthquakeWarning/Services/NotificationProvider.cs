@@ -10,10 +10,7 @@ using Voyage.EarthquakeWarning.Models;
 
 namespace Voyage.EarthquakeWarning.Services;
 
-[NotificationProviderInfo(
-    "D39B2CB3-81A1-44E5-8CE8-7D8F6415E32A",
-    "地震预警",
-    "在收到预警信息时，根据用户设置弹出地震预警")]
+[NotificationProviderInfo("D39B2CB3-81A1-44E5-8CE8-7D8F6415E32A", "地震预警", "在收到预警信息时，根据用户设置弹出地震预警")]
 public sealed class EewNotificationProvider : NotificationProviderBase
 {
     public static EewNotificationProvider? Instance { get; private set; }
@@ -77,17 +74,12 @@ public sealed class EewNotificationProvider : NotificationProviderBase
         var place = state.PlaceName;
         var magnitude = state.MagnitudeText;
         var intensity = state.LocalIntensityText;
-        var countdown = state.Arrived
-            ? "地震横波已到达"
-            : $"倒计时：{state.CountdownText}";
+        var countdown = state.Arrived ? "地震横波已到达" : $"倒计时：{state.CountdownText}";
 
         Dispatcher.UIThread.Post(() =>
         {
-            var foreground =
-                new SolidColorBrush(Color.Parse(foregroundHex));
-
-            var accent =
-                new SolidColorBrush(Color.Parse(accentHex));
+            var foreground = new SolidColorBrush(Color.Parse(foregroundHex));
+            var accent = new SolidColorBrush(Color.Parse(accentHex));
 
             foreach (var text in plainTexts)
                 text.Foreground = foreground;
@@ -204,11 +196,8 @@ public sealed class EewNotificationProvider : NotificationProviderBase
         line.Children.Add(countdownText);
         accentTexts.Add(countdownText);
 
-        var durationSeconds = Math.Max(
-            8,
-            Math.Max(0, state.CountdownSeconds) +
-            Plugin.Current!.Settings.ReleaseSeconds +
-            2);
+        var durationSeconds = Math.Max(8, Math.Max(0, state.CountdownSeconds)
+            + Plugin.Current!.Settings.ReleaseSeconds + 2);
 
         var overlay = new NotificationContent
         {
@@ -225,14 +214,9 @@ public sealed class EewNotificationProvider : NotificationProviderBase
             {
                 IsSettingsEnabled = false,
                 IsNotificationEnabled = true,
-                IsNotificationEffectEnabled =
-                    overrideSettings &&
-                    firstReport &&
-                    state.LocalIntensity >= 3,
+                IsNotificationEffectEnabled = overrideSettings && firstReport && state.LocalIntensity >= 3,
                 IsNotificationSoundEnabled = false,
-                IsNotificationTopmostEnabled =
-                    overrideSettings &&
-                    Plugin.Current!.Settings.TopMost,
+                IsNotificationTopmostEnabled = overrideSettings && Plugin.Current!.Settings.TopMost,
                 IsSpeechEnabled = false
             }
         };
@@ -290,8 +274,7 @@ public sealed class EewNotificationProvider : NotificationProviderBase
                 IsNotificationEnabled = true,
                 IsNotificationEffectEnabled = true,
                 IsNotificationSoundEnabled = false,
-                IsNotificationTopmostEnabled =
-                    Plugin.Current!.Settings.TopMost,
+                IsNotificationTopmostEnabled = Plugin.Current!.Settings.TopMost,
                 IsSpeechEnabled = false
             }
         };

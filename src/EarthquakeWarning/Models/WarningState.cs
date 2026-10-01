@@ -96,7 +96,6 @@ public sealed class WarningState : ObservableObject
     public void UpdateCountdown(DateTime nowBeijing)
     {
         CountdownSeconds = (ArrivalTimeBeijing - nowBeijing).TotalSeconds;
-
         if (CountdownSeconds <= 0)
         {
             Arrived = true;

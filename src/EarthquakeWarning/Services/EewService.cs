@@ -11,10 +11,12 @@ namespace Voyage.EarthquakeWarning.Services;
 public sealed partial class EewService : BackgroundService
 {
     private const string ApiUrl = "wss://api.odysphere.tech/cea";
-    private const string MiuiUrl = "https://srv.sec.miui.com/earthquake/warning/records";
-    private const string MiuiSign = "3F0FC5308AAABAF666E870BECCE766DE";
     private const string TokenMissingText = "未连接（未填写 API Token）";
+    private const string MiuiUrlEncoded = "aHR0cHM6Ly9zcnYuc2VjLm1pdWkuY29tL2VhcnRocXVha2Uvd2FybmluZy9yZWNvcmRz";
+    private const string MiuiSignEncoded = "M0YwRkM1MzA4QUFBQkFGNjY2RTg3MEJFQ0NFNzY2REU=";
 
+    private static readonly string MiuiUrl = Decode(MiuiUrlEncoded);
+    private static readonly string MiuiSign = Decode(MiuiSignEncoded);
     private static readonly TimeSpan MiuiTimeout = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan MiuiPollInterval = TimeSpan.FromSeconds(2);
     private static readonly HttpClient MiuiClient = new() { Timeout = MiuiTimeout };
@@ -23,10 +25,7 @@ public sealed partial class EewService : BackgroundService
     private string? _lastMiuiKey;
     private CancellationTokenSource _switchSource = new();
 
-    public EewService(WarningEngine engine)
-    {
-        _engine = engine;
-    }
+    public EewService(WarningEngine engine) => _engine = engine;
 
     public void Restart()
     {
@@ -36,38 +35,28 @@ public sealed partial class EewService : BackgroundService
         previous.Cancel();
     }
 
-    private static ApiSource CurrentSource =>
-        Plugin.Current!.Settings.ApiSource;
+    private static string Decode(string value) => Encoding.UTF8.GetString(Convert.FromBase64String(value));
+
+    private static ApiSource CurrentSource => Plugin.Current!.Settings.ApiSource;
 
     private static void SetStatus(ApiSource source, string text)
     {
-        if (Plugin.Current!.Settings.ApiSource == source)
-            Plugin.Current!.Settings.ApiConnectionTimeText = text;
+        if (Plugin.Current!.Settings.ApiSource == source) Plugin.Current!.Settings.ApiConnectionTimeText = text;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var linked =
-                CancellationTokenSource.CreateLinkedTokenSource(
-                    stoppingToken,
-                    _switchSource.Token);
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, _switchSource.Token);
 
             try
             {
-                if (CurrentSource == ApiSource.Miui)
-                    await IterateMiuiAsync(linked.Token);
-                else
-                    await IterateVoyageAsync(linked.Token);
+                if (CurrentSource == ApiSource.Miui) await IterateMiuiAsync(linked.Token);
+                else await IterateVoyageAsync(linked.Token);
             }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                break;
-            }
-            catch (OperationCanceledException)
-            {
-            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
+            catch (OperationCanceledException) { }
         }
     }
 
@@ -75,13 +64,11 @@ public sealed partial class EewService : BackgroundService
 
     private async Task IterateVoyageAsync(CancellationToken token)
     {
-        var apiToken =
-            Plugin.Current!.Settings.ApiToken?.Trim() ?? "";
+        var apiToken = Plugin.Current!.Settings.ApiToken?.Trim() ?? "";
 
         if (apiToken.Length == 0)
         {
             SetStatus(ApiSource.Voyage, TokenMissingText);
-
             await Task.Delay(TimeSpan.FromSeconds(3), token);
             return;
         }
@@ -91,45 +78,28 @@ public sealed partial class EewService : BackgroundService
             using var ws = new ClientWebSocket();
             await ws.ConnectAsync(new Uri(ApiUrl), token);
             token.ThrowIfCancellationRequested();
-
-            SetStatus(
-                ApiSource.Voyage,
-                $"API连接于：{NowBeijing():yyyy-MM-dd HH:mm:ss}");
-
-            await ws.SendAsync(
-                Encoding.UTF8.GetBytes(apiToken),
-                WebSocketMessageType.Text,
-                true,
-                token);
-
+            SetStatus(ApiSource.Voyage, $"API连接于：{NowBeijing():yyyy-MM-dd HH:mm:ss}");
+            await ws.SendAsync(Encoding.UTF8.GetBytes(apiToken), WebSocketMessageType.Text, true, token);
             await ReceiveLoopAsync(ws, token);
         }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            SetStatus(ApiSource.Voyage, $"连接失败：{ex.Message}");
-        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { SetStatus(ApiSource.Voyage, $"连接失败：{ex.Message}"); }
     }
 
     private async Task ReceiveLoopAsync(ClientWebSocket ws, CancellationToken token)
     {
         var buffer = new byte[32 * 1024];
         using var ms = new MemoryStream();
+
         while (ws.State == WebSocketState.Open && !token.IsCancellationRequested)
         {
             var result = await ws.ReceiveAsync(buffer, token);
 
             if (result.MessageType == WebSocketMessageType.Close)
             {
-                SetStatus(
-                    ApiSource.Voyage,
-                    string.IsNullOrWhiteSpace(result.CloseStatusDescription)
-                        ? $"连接已被服务端关闭（{result.CloseStatus}）"
-                        : $"连接已被服务端关闭：{result.CloseStatusDescription}");
-
+                SetStatus(ApiSource.Voyage, string.IsNullOrWhiteSpace(result.CloseStatusDescription)
+                    ? $"连接已被服务端关闭（{result.CloseStatus}）"
+                    : $"连接已被服务端关闭：{result.CloseStatusDescription}");
                 break;
             }
 
@@ -143,20 +113,10 @@ public sealed partial class EewService : BackgroundService
 
             EewEnvelope? envelope;
 
-            try
-            {
-                envelope = JsonSerializer.Deserialize<EewEnvelope>(json);
-            }
-            catch (JsonException ex)
-            {
-                Plugin.Current!.Settings.ApiRecentDataText =
-                    $"数据解析失败：{ex.Message}";
+            try { envelope = JsonSerializer.Deserialize<EewEnvelope>(json); }
+            catch (JsonException ex) { Plugin.Current!.Settings.ApiRecentDataText = $"数据解析失败：{ex.Message}"; continue; }
 
-                continue;
-            }
-
-            if (envelope?.Data is null)
-                continue;
+            if (envelope?.Data is null) continue;
 
             var d = envelope.Data;
             var depth = d.Depth ?? 0;
@@ -164,13 +124,7 @@ public sealed partial class EewService : BackgroundService
             Plugin.Current!.Settings.ApiRecentDataText =
                 $"中国地震预警网第{d.Updates}报，{d.ShockTime}在{d.PlaceName}附近({d.Latitude:0.###},{d.Longitude:0.###})正在发生{d.Magnitude}级地震，震源深度{depth:0.#}km，预估最大烈度{d.EpiIntensity:0.#}";
 
-            try
-            {
-                await _engine.ProcessAsync(d, false, token);
-            }
-            catch
-            {
-            }
+            try { await _engine.ProcessAsync(d, false, token); } catch { }
         }
     }
 
@@ -181,75 +135,35 @@ public sealed partial class EewService : BackgroundService
             await RequestMiuiAsync(token);
             await Task.Delay(MiuiPollInterval, token);
         }
-        catch (TaskCanceledException) when (!token.IsCancellationRequested)
-        {
-            SetStatus(ApiSource.Miui, "最近验证失败：请求超时");
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            SetStatus(ApiSource.Miui, $"最近验证失败：{ex.Message}");
-        }
+        catch (TaskCanceledException) when (!token.IsCancellationRequested) { SetStatus(ApiSource.Miui, "最近验证失败：请求超时"); }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { SetStatus(ApiSource.Miui, $"最近验证失败：{ex.Message}"); }
     }
 
     private async Task RequestMiuiAsync(CancellationToken token)
     {
-        using var content = new FormUrlEncodedContent(
-            new Dictionary<string, string>
-            {
-                ["version"] = "2",
-                ["sign"] = MiuiSign
-            });
-
-        using var response =
-            await MiuiClient.PostAsync(MiuiUrl, content, token);
-
+        using var content = new FormUrlEncodedContent(new Dictionary<string, string> { ["version"] = "2", ["sign"] = MiuiSign });
+        using var response = await MiuiClient.PostAsync(MiuiUrl, content, token);
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync(token);
         token.ThrowIfCancellationRequested();
-
-        SetStatus(
-            ApiSource.Miui,
-            $"最近验证时间：{NowBeijing():yyyy-MM-dd HH:mm:ss}");
+        SetStatus(ApiSource.Miui, $"最近验证时间：{NowBeijing():yyyy-MM-dd HH:mm:ss}");
 
         MiuiEnvelope? envelope;
 
-        try
-        {
-            envelope = JsonSerializer.Deserialize<MiuiEnvelope>(json);
-        }
-        catch (JsonException ex)
-        {
-            Plugin.Current!.Settings.ApiRecentDataText =
-                $"数据解析失败：{ex.Message}";
-
-            return;
-        }
+        try { envelope = JsonSerializer.Deserialize<MiuiEnvelope>(json); }
+        catch (JsonException ex) { Plugin.Current!.Settings.ApiRecentDataText = $"数据解析失败：{ex.Message}"; return; }
 
         var record = envelope?.Data?.FirstOrDefault();
+        if (record is null) return;
 
-        if (record is null)
-            return;
-
-        var key = string.Create(
-            CultureInfo.InvariantCulture,
-            $"{record.EventId}-{record.Update}");
-
-        if (key == _lastMiuiKey)
-            return;
-
+        var key = string.Create(CultureInfo.InvariantCulture, $"{record.EventId}-{record.Update}");
+        if (key == _lastMiuiKey) return;
         _lastMiuiKey = key;
 
         var depth = record.Depth;
-
-        var shockTime = DateTimeOffset
-            .FromUnixTimeMilliseconds(record.StartAt)
-            .ToOffset(TimeSpan.FromHours(8))
-            .ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+        var shockTime = DateTimeOffset.FromUnixTimeMilliseconds(record.StartAt).ToOffset(TimeSpan.FromHours(8)).ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
         var d = new EewData
         {

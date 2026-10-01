@@ -23,10 +23,8 @@ public sealed class Plugin : PluginBase
     public override void Initialize(HostBuilderContext context, IServiceCollection services)
     {
         Current = this;
-
         ConfigDirectory = Path.Combine(PluginConfigFolder, "Voyage.EarthquakeWarning");
         Directory.CreateDirectory(ConfigDirectory);
-
         Settings = PluginSettings.Load(Path.Combine(ConfigDirectory, "settings.json"));
 
         services.AddSingleton<SettingsStore>(sp =>
@@ -37,6 +35,7 @@ public sealed class Plugin : PluginBase
         });
 
         services.AddSingleton<AudioService>();
+
         services.AddSingleton<GeoLocationService>(sp =>
         {
             var value = new GeoLocationService();
@@ -45,6 +44,7 @@ public sealed class Plugin : PluginBase
         });
 
         services.AddSingleton<WarningEngine>();
+
         services.AddSingleton<EewService>(sp =>
         {
             var value = ActivatorUtilities.CreateInstance<EewService>(sp);

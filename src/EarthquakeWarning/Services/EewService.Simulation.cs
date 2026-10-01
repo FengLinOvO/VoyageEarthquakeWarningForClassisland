@@ -6,8 +6,7 @@ public partial class EewService
 
     public async Task StartSimulationFromSettingsAsync()
     {
-        if (_simulationRunning)
-            return;
+        if (_simulationRunning) return;
 
         _simulationRunning = true;
 

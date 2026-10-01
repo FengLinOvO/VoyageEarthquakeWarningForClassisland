@@ -23,24 +23,19 @@ public sealed class AudioService
 
     public AudioService()
     {
-        var pluginDirectory =
-            Path.GetDirectoryName(typeof(AudioService).Assembly.Location)
+        var pluginDirectory = Path.GetDirectoryName(typeof(AudioService).Assembly.Location)
             ?? AppContext.BaseDirectory;
 
-        _audioDirectory =
-            Path.Combine(pluginDirectory, "Assets", "Audio");
+        _audioDirectory = Path.Combine(pluginDirectory, "Assets", "Audio");
     }
 
     private string GetAudioPath(string fileName)
     {
         var path = Path.Combine(_audioDirectory, fileName);
-
         if (!File.Exists(path))
             throw new FileNotFoundException("Audio file not found.", path);
-
         if (new FileInfo(path).Length <= 44)
             throw new InvalidDataException("Audio file is empty or invalid.");
-
         return path;
     }
 
@@ -50,9 +45,7 @@ public sealed class AudioService
         return reader.TotalTime.TotalSeconds;
     }
 
-    public void PlaySequence(
-        IReadOnlyList<AudioCue> cues,
-        CancellationToken cancellationToken)
+    public void PlaySequence(IReadOnlyList<AudioCue> cues, CancellationToken cancellationToken)
     {
         if (cues.Count == 0)
             return;
@@ -60,31 +53,20 @@ public sealed class AudioService
         lock (_gate)
         {
             var previous = _playbackTask;
-
             _currentCts?.Cancel();
 
-            var cts = CancellationTokenSource
-                .CreateLinkedTokenSource(cancellationToken);
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             _currentCts = cts;
             _playing = true;
-            _playbackTask =
-                RunSequenceAsync(previous, cues, cts);
+            _playbackTask = RunSequenceAsync(previous, cues, cts);
         }
     }
 
-    private async Task RunSequenceAsync(
-        Task previous,
-        IReadOnlyList<AudioCue> cues,
-        CancellationTokenSource cts)
+    private async Task RunSequenceAsync(Task previous, IReadOnlyList<AudioCue> cues, CancellationTokenSource cts)
     {
-        try
-        {
-            await previous.ConfigureAwait(false);
-        }
-        catch
-        {
-        }
+        try { await previous.ConfigureAwait(false); }
+        catch { }
 
         try
         {
@@ -93,22 +75,13 @@ public sealed class AudioService
                 cts.Token.ThrowIfCancellationRequested();
 
                 if (cue.DelaySeconds > 0)
-                {
-                    await Task.Delay(
-                        (int)(cue.DelaySeconds * 1000),
-                        cts.Token).ConfigureAwait(false);
-                }
+                    await Task.Delay((int)(cue.DelaySeconds * 1000), cts.Token).ConfigureAwait(false);
 
-                await PlayFileAsync(cue, cts.Token, false)
-                    .ConfigureAwait(false);
+                await PlayFileAsync(cue, cts.Token, false).ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException)
-        {
-        }
-        catch
-        {
-        }
+        catch (OperationCanceledException) { }
+        catch { }
         finally
         {
             lock (_gate)
@@ -123,48 +96,27 @@ public sealed class AudioService
         }
     }
 
-    private async Task PlayFileAsync(
-        AudioCue cue,
-        CancellationToken token,
-        bool overlay)
+    private async Task PlayFileAsync(AudioCue cue, CancellationToken token, bool overlay)
     {
-        using var reader =
-            new AudioFileReader(GetAudioPath(cue.FileName));
+        using var reader = new AudioFileReader(GetAudioPath(cue.FileName));
 
-        var maxStart = Math.Max(
-            0,
-            reader.TotalTime.TotalSeconds - 0.05);
-
-        var start = Math.Clamp(
-            cue.StartSeconds,
-            0,
-            maxStart);
+        var maxStart = Math.Max(0, reader.TotalTime.TotalSeconds - 0.05);
+        var start = Math.Clamp(cue.StartSeconds, 0, maxStart);
 
         if (start > 0)
-        {
-            reader.CurrentTime =
-                TimeSpan.FromSeconds(start);
-        }
+            reader.CurrentTime = TimeSpan.FromSeconds(start);
 
         using var output = new WaveOutEvent();
 
-        var completion = new TaskCompletionSource(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-
-        output.PlaybackStopped +=
-            (_, _) => completion.TrySetResult();
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        output.PlaybackStopped += (_, _) => completion.TrySetResult();
 
         output.Init(reader);
 
         using var registration = token.Register(() =>
         {
-            try
-            {
-                output.Stop();
-            }
-            catch
-            {
-            }
+            try { output.Stop(); }
+            catch { }
         });
 
         lock (_gate)
@@ -187,23 +139,16 @@ public sealed class AudioService
             lock (_gate)
             {
                 if (overlay)
-                {
                     _overlayOutputs.Remove(output);
-                }
                 else if (ReferenceEquals(_currentOutput, output))
-                {
                     _currentOutput = null;
-                }
             }
         }
     }
 
-    public void PlayOverlay(
-        string fileName,
-        CancellationToken cancellationToken)
+    public void PlayOverlay(string fileName, CancellationToken cancellationToken)
     {
-        var cts = CancellationTokenSource
-            .CreateLinkedTokenSource(cancellationToken);
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         lock (_gate)
             _overlayCts.Add(cts);
@@ -211,21 +156,11 @@ public sealed class AudioService
         _ = RunOverlayAsync(new AudioCue(fileName, 0), cts);
     }
 
-    private async Task RunOverlayAsync(
-        AudioCue cue,
-        CancellationTokenSource cts)
+    private async Task RunOverlayAsync(AudioCue cue, CancellationTokenSource cts)
     {
-        try
-        {
-            await PlayFileAsync(cue, cts.Token, true)
-                .ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-        }
-        catch
-        {
-        }
+        try { await PlayFileAsync(cue, cts.Token, true).ConfigureAwait(false); }
+        catch (OperationCanceledException) { }
+        catch { }
         finally
         {
             lock (_gate)
@@ -249,42 +184,22 @@ public sealed class AudioService
             _playing = false;
         }
 
-        try
-        {
-            output?.Stop();
-        }
-        catch
-        {
-        }
+        try { output?.Stop(); }
+        catch { }
 
         foreach (var overlayOutput in overlayOutputs)
         {
-            try
-            {
-                overlayOutput.Stop();
-            }
-            catch
-            {
-            }
+            try { overlayOutput.Stop(); }
+            catch { }
         }
 
-        try
-        {
-            cts?.Cancel();
-        }
-        catch
-        {
-        }
+        try { cts?.Cancel(); }
+        catch { }
 
         foreach (var overlay in overlays)
         {
-            try
-            {
-                overlay.Cancel();
-            }
-            catch
-            {
-            }
+            try { overlay.Cancel(); }
+            catch { }
         }
     }
 
@@ -295,16 +210,12 @@ public sealed class AudioService
             var endpoint = new MMDeviceEnumerator()
                 .GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
 
-            _originalMasterVolume ??=
-                endpoint.AudioEndpointVolume.MasterVolumeLevelScalar;
+            _originalMasterVolume ??= endpoint.AudioEndpointVolume.MasterVolumeLevelScalar;
 
             endpoint.AudioEndpointVolume.MasterVolumeLevelScalar = 1.0f;
-            _lastVolumeRestoreDeadline =
-                DateTime.UtcNow.AddSeconds(10);
+            _lastVolumeRestoreDeadline = DateTime.UtcNow.AddSeconds(10);
         }
-        catch
-        {
-        }
+        catch { }
     }
 
     public void RestoreMasterVolume()
@@ -317,12 +228,9 @@ public sealed class AudioService
             var endpoint = new MMDeviceEnumerator()
                 .GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
 
-            endpoint.AudioEndpointVolume.MasterVolumeLevelScalar =
-                _originalMasterVolume.Value;
+            endpoint.AudioEndpointVolume.MasterVolumeLevelScalar = _originalMasterVolume.Value;
         }
-        catch
-        {
-        }
+        catch { }
 
         _originalMasterVolume = null;
     }

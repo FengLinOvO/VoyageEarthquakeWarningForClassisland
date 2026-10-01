@@ -12,10 +12,7 @@ public sealed class WarningWindowService
 
     public event EventHandler? UserClosed;
 
-    public void ShowOrUpdate(
-        WarningState state,
-        bool topMost,
-        bool allowReopen)
+    public void ShowOrUpdate(WarningState state, bool topMost, bool allowReopen)
     {
         Dispatcher.UIThread.Post(() =>
         {
@@ -41,19 +38,11 @@ public sealed class WarningWindowService
                 {
                     var scale = Math.Max(1.0, screen.Scaling);
 
-                    _window.Width =
-                        Math.Max(
-                            1100,
-                            screen.Bounds.Width / scale / 2.0);
-
-                    _window.Height =
-                        Math.Max(
-                            620,
-                            screen.Bounds.Height / scale / 2.0);
+                    _window.Width = Math.Max(1100, screen.Bounds.Width / scale / 2.0);
+                    _window.Height = Math.Max(620, screen.Bounds.Height / scale / 2.0);
                 }
 
-                _window.WindowStartupLocation =
-                    WindowStartupLocation.CenterScreen;
+                _window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
 
                 _window.Show();
             }
@@ -70,13 +59,9 @@ public sealed class WarningWindowService
         });
     }
 
-    private void WindowClosed(
-        object? sender,
-        EventArgs e)
+    private void WindowClosed(object? sender, EventArgs e)
     {
-        var userRequested =
-            sender is EarthquakeWarningWindow window &&
-            window.UserRequestedClose;
+        var userRequested = sender is EarthquakeWarningWindow window && window.UserRequestedClose;
 
         if (userRequested)
             _userClosed = true;
