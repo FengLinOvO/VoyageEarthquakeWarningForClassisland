@@ -8,6 +8,7 @@ public sealed class PluginSettings : ObservableObject
     private string _latitude = "36.06";
     private string _longitude = "103.83";
     private string _apiToken = "";
+    private ApiSource _apiSource = ApiSource.Miui;
     private int _triggerThreshold = 2;
     private WarningMode _warningMode = WarningMode.IndependentUi;
     private int _releaseSeconds = 15;
@@ -22,6 +23,7 @@ public sealed class PluginSettings : ObservableObject
     public string Latitude { get => _latitude; set => SetProperty(ref _latitude, value); }
     public string Longitude { get => _longitude; set => SetProperty(ref _longitude, value); }
     public string ApiToken { get => _apiToken; set => SetProperty(ref _apiToken, value); }
+    public ApiSource ApiSource { get => _apiSource; set => SetProperty(ref _apiSource, value); }
     public int TriggerThreshold { get => _triggerThreshold; set => SetProperty(ref _triggerThreshold, value); }
     public WarningMode WarningMode { get => _warningMode; set => SetProperty(ref _warningMode, value); }
     public int ReleaseSeconds { get => _releaseSeconds; set => SetProperty(ref _releaseSeconds, Math.Clamp(value, 0, 300)); }

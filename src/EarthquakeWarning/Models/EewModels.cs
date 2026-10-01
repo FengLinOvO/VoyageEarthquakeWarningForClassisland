@@ -43,3 +43,54 @@ public sealed class EewData
     [JsonPropertyName("updates")]
     public int Updates { get; set; }
 }
+
+public sealed class MiuiEnvelope
+{
+    [JsonPropertyName("code")]
+    public int Code { get; set; }
+
+    [JsonPropertyName("desc")]
+    public string? Desc { get; set; }
+
+    [JsonPropertyName("data")]
+    public List<MiuiRecord>? Data { get; set; }
+}
+
+public sealed class MiuiRecord
+{
+    [JsonPropertyName("id")]
+    public long Id { get; set; }
+
+    [JsonPropertyName("eventId")]
+    public long EventId { get; set; }
+
+    [JsonPropertyName("update")]
+    public int Update { get; set; }
+
+    [JsonPropertyName("type")]
+    public string? Type { get; set; }
+
+    [JsonPropertyName("startAt")]
+    public long StartAt { get; set; }
+
+    [JsonPropertyName("updateAt")]
+    public long UpdateAt { get; set; }
+
+    [JsonPropertyName("magnitude")]
+    public double Magnitude { get; set; }
+
+    [JsonPropertyName("depth")]
+    public double Depth { get; set; }
+
+    [JsonPropertyName("longitude")]
+    public double Longitude { get; set; }
+
+    [JsonPropertyName("latitude")]
+    public double Latitude { get; set; }
+
+    [JsonPropertyName("epicenter")]
+    public string? Epicenter { get; set; }
+
+    [JsonPropertyName("signature")]
+    public string? Signature { get; set; }
+}

@@ -3,7 +3,7 @@ using NAudio.Wave;
 
 namespace Voyage.EarthquakeWarning.Services;
 
-public sealed record AudioCue(string FileName, double StartSeconds);
+public sealed record AudioCue(string FileName, double StartSeconds, double DelaySeconds = 0);
 
 public sealed class AudioService
 {
@@ -19,7 +19,6 @@ public sealed class AudioService
     private DateTime _lastVolumeRestoreDeadline = DateTime.MinValue;
     private volatile bool _playing;
 
-    // 是否还有音频在播放
     public bool IsPlaying => _playing;
 
     public AudioService()
@@ -51,7 +50,6 @@ public sealed class AudioService
         return reader.TotalTime.TotalSeconds;
     }
 
-    // 播放一组音频，新的一组会立即打断上一组
     public void PlaySequence(
         IReadOnlyList<AudioCue> cues,
         CancellationToken cancellationToken)
@@ -93,6 +91,13 @@ public sealed class AudioService
             foreach (var cue in cues)
             {
                 cts.Token.ThrowIfCancellationRequested();
+
+                if (cue.DelaySeconds > 0)
+                {
+                    await Task.Delay(
+                        (int)(cue.DelaySeconds * 1000),
+                        cts.Token).ConfigureAwait(false);
+                }
 
                 await PlayFileAsync(cue, cts.Token, false)
                     .ConfigureAwait(false);
@@ -193,7 +198,6 @@ public sealed class AudioService
         }
     }
 
-    // 叠加播放，不打断当前正在播放的音频
     public void PlayOverlay(
         string fileName,
         CancellationToken cancellationToken)

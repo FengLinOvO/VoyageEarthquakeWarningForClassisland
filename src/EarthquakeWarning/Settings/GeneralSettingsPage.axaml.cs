@@ -44,11 +44,28 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
             "由插件绘制独立UI"
         };
 
+        SourceBox.ItemsSource = new[]
+        {
+            "Voyage Project API",
+            "MIUI API"
+        };
+
         LoadUi();
 
         AutoLocateButton.Click += AutoLocateButton_Click;
         SaveButton.Click += (_, _) => SaveUi();
         SaveAdvancedButton.Click += (_, _) => SaveAdvancedUi();
+
+        SourceBox.SelectionChanged += (_, _) =>
+        {
+            Settings.ApiSource =
+                (ApiSource)Math.Clamp(SourceBox.SelectedIndex, 0, 1);
+
+            TokenPanel.IsVisible =
+                Settings.ApiSource == ApiSource.Voyage;
+
+            Store.Save();
+        };
 
         TokenBox.LostFocus += (_, _) =>
         {
@@ -117,6 +134,12 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
         ModeBox.SelectedIndex =
             (int)Settings.WarningMode;
 
+        SourceBox.SelectedIndex =
+            (int)Settings.ApiSource;
+
+        TokenPanel.IsVisible =
+            Settings.ApiSource == ApiSource.Voyage;
+
         ReleaseBox.Value =
             Settings.ReleaseSeconds;
 
@@ -133,7 +156,6 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
             Settings.ForceVolume;
 
         ApiConnectionText.Text =
-            "API连接于：" +
             Settings.ApiConnectionTimeText;
 
         ApiRecentText.Text =
@@ -153,7 +175,6 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
             return true;
 
         ApiConnectionText.Text =
-            "API连接于：" +
             Settings.ApiConnectionTimeText;
 
         ApiRecentText.Text =
@@ -218,6 +239,12 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
         Settings.WarningMode =
             (WarningMode)Math.Clamp(
                 ModeBox.SelectedIndex,
+                0,
+                1);
+
+        Settings.ApiSource =
+            (ApiSource)Math.Clamp(
+                SourceBox.SelectedIndex,
                 0,
                 1);
 

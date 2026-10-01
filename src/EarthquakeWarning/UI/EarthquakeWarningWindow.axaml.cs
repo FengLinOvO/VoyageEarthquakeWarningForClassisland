@@ -2,7 +2,7 @@ using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Media.Transformation;
+using Avalonia.Threading;
 using Voyage.EarthquakeWarning.Models;
 
 namespace Voyage.EarthquakeWarning.UI;
@@ -26,6 +26,8 @@ public partial class EarthquakeWarningWindow : Window
 
     private readonly List<Marquee> _marquees = [];
     private CancellationTokenSource? _marqueeCts;
+    private DispatcherTimer? _scaleWatcher;
+    private double _lastScaling;
 
     public bool UserRequestedClose { get; private set; }
 
@@ -41,17 +43,84 @@ public partial class EarthquakeWarningWindow : Window
 
         Opened += (_, _) =>
         {
-            RootBorder.Opacity = 1;
-            RootBorder.RenderTransform =
-                TransformOperations.Parse("scale(1)");
-
             StartMarquee();
+            StartScaleWatcher();
         };
 
-        Closed += (_, _) => _marqueeCts?.Cancel();
+        Closed += (_, _) =>
+        {
+            _marqueeCts?.Cancel();
+            _scaleWatcher?.Stop();
+        };
     }
 
-    // 文本超出列宽时从右往左循环滚动
+    private void StartScaleWatcher()
+    {
+        _lastScaling = RenderScaling;
+        ApplyScaleLayout(_lastScaling);
+
+        _scaleWatcher = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(200)
+        };
+        _scaleWatcher.Tick += (_, _) => CheckScale();
+        _scaleWatcher.Start();
+    }
+
+    private void CheckScale()
+    {
+        var scaling = RenderScaling;
+
+        if (Math.Abs(scaling - _lastScaling) < 0.001)
+        {
+            return;
+        }
+
+        _lastScaling = scaling;
+
+        ApplyScaleLayout(scaling);
+
+        var screen = Screens.Primary;
+
+        if (screen is null)
+            return;
+
+        var scale = Math.Max(1.0, scaling);
+
+        Width =
+            Math.Max(
+                1100,
+                screen.Bounds.Width / scale / 2.0);
+
+        Height =
+            Math.Max(
+                620,
+                screen.Bounds.Height / scale / 2.0);
+
+        var widthPx = Width * scaling;
+        var heightPx = Height * scaling;
+
+        Position = new Avalonia.PixelPoint(
+            screen.Bounds.X +
+            (int)((screen.Bounds.Width - widthPx) / 2),
+            screen.Bounds.Y +
+            (int)((screen.Bounds.Height - heightPx) / 2));
+    }
+
+    private void ApplyScaleLayout(double scaling)
+    {
+        var delta = Math.Max(0.0, scaling - 1.0);
+
+        TitleText.LetterSpacing = delta * 4;
+        InfoGrid.ColumnSpacing = 32 + delta * 20;
+
+        var offsetTitle = delta * 80;
+        var offsetInfo = delta * 60;
+
+        TitleText.RenderTransform = new TranslateTransform(0, -offsetTitle);
+        InfoGrid.RenderTransform = new TranslateTransform(0, offsetInfo);
+    }
+
     private void StartMarquee()
     {
         _marquees.Add(
@@ -124,7 +193,6 @@ public partial class EarthquakeWarningWindow : Window
             return;
         }
 
-        // 文本块按自然宽度绘制，超出列宽的部分交给外层容器裁剪
         marquee.Text.Width = marquee.TextWidth;
         marquee.Text.HorizontalAlignment =
             HorizontalAlignment.Left;
@@ -157,7 +225,6 @@ public partial class EarthquakeWarningWindow : Window
         return formatted.Width;
     }
 
-    // “秒”跟随数字右缘、位于数字基线以下，并限制在内圆范围内
     private void UpdateSecondsPosition()
     {
         var ring = CountdownRing.Bounds.Width;
@@ -226,13 +293,15 @@ public partial class EarthquakeWarningWindow : Window
         }
         else
         {
-            CountdownMain.FontSize = 150;
-            CountdownMain.Text =
+            var seconds =
                 Math.Max(
                     0,
                     Math.Ceiling(
-                        state.CountdownSeconds))
-                .ToString("0");
+                        state.CountdownSeconds));
+
+            CountdownMain.Text = seconds.ToString("0");
+            CountdownMain.FontSize =
+                seconds >= 100 ? 120 : 150;
         }
 
         SecondsText.IsVisible = !state.Arrived;

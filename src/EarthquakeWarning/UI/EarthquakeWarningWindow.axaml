@@ -1,10 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Voyage.EarthquakeWarning.UI.EarthquakeWarningWindow"
-        Width="1280"
-        Height="700"
-        MinWidth="1100"
-        MinHeight="620"
         Background="Transparent"
         SystemDecorations="None"
         CanResize="False"
@@ -16,18 +12,7 @@
           BorderThickness="4"
           CornerRadius="22"
           Padding="48"
-          Opacity="0"
-          RenderTransformOrigin="0.5,0.5"
-          RenderTransform="scale(0.94)">
-    <Border.Transitions>
-      <Transitions>
-        <DoubleTransition Property="Opacity"
-                          Duration="0:0:0.14"/>
-        <TransformOperationsTransition Property="RenderTransform"
-                                       Duration="0:0:0.14"/>
-      </Transitions>
-    </Border.Transitions>
-
+          Opacity="1">
     <Grid RowDefinitions="132,1*,182">
       <Grid Grid.Row="0">
         <Image x:Name="TierImage"
@@ -138,7 +123,8 @@
         </StackPanel>
       </Grid>
 
-      <Grid Grid.Row="2"
+      <Grid x:Name="InfoGrid"
+            Grid.Row="2"
             ColumnDefinitions="1*,1*,1*,1*,1*"
             ColumnSpacing="32"
             VerticalAlignment="Center">

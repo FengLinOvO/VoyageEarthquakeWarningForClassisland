@@ -6,6 +6,12 @@ public enum WarningMode
     IndependentUi = 1
 }
 
+public enum ApiSource
+{
+    Voyage = 0,
+    Miui = 1
+}
+
 public enum WarningTier
 {
     BlueNoFeel = 0,

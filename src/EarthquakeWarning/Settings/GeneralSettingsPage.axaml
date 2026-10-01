@@ -10,7 +10,7 @@
           <TextBlock Text="免责声明"
                      FontSize="18"
                      FontWeight="Bold"/>
-          <TextBlock Text="· 地震预警信息由中国地震台网中心产出并下发，API由作者开发的Voyage Project API提供；作者不对地震预警信息的准确性、有效性等作任何承诺与保证，对于使用本API造成的一切后果与作者无关。&#10;· 本插件仅分发地震预警信息，并非地震预测。&#10;· 作者对因信息延迟、误报或漏报所造成的任何损失不承担法律责任，请以官方发布信息为准。&#10;· 本插件以 LGPL-3.0-only 许可证开源。"
+          <TextBlock Text="· 地震预警信息由中国地震台网中心产出并下发，API由 Voyage Project API 与 MIUI API 提供；作者不对地震预警信息的准确性、有效性等作任何承诺与保证，对于使用本API造成的一切后果与作者无关。&#10;· 本插件仅分发地震预警信息，并非地震预测。&#10;· 作者对因信息延迟、误报或漏报所造成的任何损失不承担法律责任，请以官方发布信息为准。&#10;· 本插件以 LGPL-3.0-only 许可证开源。"
                      TextWrapping="Wrap"/>
         </StackPanel>
       </Border>
@@ -24,7 +24,7 @@
                 Padding="14">
           <StackPanel Spacing="6">
             <TextBlock x:Name="ApiConnectionText"
-                       Text="API连接于：未连接"
+                       Text="未连接"
                        TextWrapping="Wrap"/>
             <TextBlock x:Name="ApiRecentText"
                        Text="API最近数据：暂无数据"
@@ -34,6 +34,23 @@
       </StackPanel>
 
       <StackPanel Spacing="8">
+        <TextBlock Text="API 源"
+                   FontSize="18"
+                   FontWeight="Bold"/>
+        <Border Background="#10000000"
+                CornerRadius="10"
+                Padding="14">
+          <StackPanel Spacing="8">
+            <ComboBox x:Name="SourceBox"/>
+            <TextBlock Text="Voyage Project API 采用 WebSocket 连接，需填写 API Token；MIUI API 采用 POST 请求，无需鉴权。二者提供的内容完全一致，MIUI API 受限于预警源返回内容较多及网络因素，预警可能存在 1-3 秒延迟。"
+                       TextWrapping="Wrap"
+                       FontSize="13"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <StackPanel x:Name="TokenPanel"
+                  Spacing="8">
         <TextBlock Text="API Token"
                    FontSize="18"
                    FontWeight="Bold"/>

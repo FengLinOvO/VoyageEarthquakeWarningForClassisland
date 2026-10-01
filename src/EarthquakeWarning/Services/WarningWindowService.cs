@@ -10,7 +10,6 @@ public sealed class WarningWindowService
     private EarthquakeWarningWindow? _window;
     private bool _userClosed;
 
-    // 用户点击预警界面关闭按钮时触发
     public event EventHandler? UserClosed;
 
     public void ShowOrUpdate(
@@ -40,15 +39,17 @@ public sealed class WarningWindowService
 
                 if (screen is not null)
                 {
+                    var scale = Math.Max(1.0, screen.Scaling);
+
                     _window.Width =
                         Math.Max(
                             1100,
-                            screen.Bounds.Width / 2.0);
+                            screen.Bounds.Width / scale / 2.0);
 
                     _window.Height =
                         Math.Max(
                             620,
-                            screen.Bounds.Height / 2.0);
+                            screen.Bounds.Height / scale / 2.0);
                 }
 
                 _window.WindowStartupLocation =

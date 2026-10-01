@@ -40,7 +40,6 @@ public sealed class EewNotificationProvider : NotificationProviderBase
         Instance?.PushInternal(state, firstReport, overrideSettings);
     }
 
-    // 更新报只刷新已显示横幅的内容，不重新推送
     public static void UpdateReport(WarningState state)
     {
         Instance?.UpdateInternal(state);

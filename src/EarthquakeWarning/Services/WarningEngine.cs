@@ -12,6 +12,9 @@ public sealed class WarningEngine
     private const double SecondsAudioOffsetSeconds = 12;
     private const double LongAudioCountdownSeconds = 20;
     private const double DriftToleranceSeconds = 3;
+    private const double HistoricalSeconds = 200;
+    private const double ArrivedGraceSeconds = 20;
+    private const double BlueNoFeelLongThreshold = 5;
 
     private readonly AudioService _audio;
     private readonly WarningWindowService _window;
@@ -38,7 +41,6 @@ public sealed class WarningEngine
         _window.UserClosed += OnWindowUserClosed;
     }
 
-    // 用户关闭预警界面后停止音频，并抑制本轮后续音频
     private void OnWindowUserClosed(
         object? sender,
         EventArgs e)
@@ -60,7 +62,7 @@ public sealed class WarningEngine
         var now = NowBeijing();
         var age = (now - shockTime).TotalSeconds;
 
-        if (!isSimulation && (age > 200 || age < -5))
+        if (!isSimulation && (age > HistoricalSeconds || age < -5))
             return Task.CompletedTask;
 
         if (!TryGetLocation(settings, out var userLat, out var userLng))
@@ -87,8 +89,6 @@ public sealed class WarningEngine
             shockTime,
             now);
 
-        // 需要发声的预警窗口：倒计时在 20 秒以内且尚未到达
-        var isInWindow = countdown is > 0 and <= 20;
         var isArrived = countdown <= 0;
 
         bool isWarningActive;
@@ -96,9 +96,12 @@ public sealed class WarningEngine
         lock (_sync)
             isWarningActive = _isActive;
 
-        // 超出预警窗口（距离过远或地震波已到达）且当前没有进行中的预警时忽略该报文
-        if (!isSimulation && !isInWindow && !isWarningActive)
+        if (!isSimulation &&
+            !isWarningActive &&
+            countdown < -ArrivedGraceSeconds)
+        {
             return Task.CompletedTask;
+        }
 
         var tier = GetTier(localIntensity);
         var state = CreateState(
@@ -194,11 +197,15 @@ public sealed class WarningEngine
         if (isFirst)
             StartTicker(cancellationToken);
 
-        // 距离过远的报文只刷新界面不发声；已到达的报文只在预警进行中发声
+        var inAudioWindow =
+            countdown > 0 &&
+            countdown <= LongAudioCountdownSeconds;
+
         var mayPlayAudio =
             isSimulation ||
-            isInWindow ||
-            (isArrived && isWarningActive);
+            inAudioWindow ||
+            (isArrived && isWarningActive) ||
+            state.Tier == WarningTier.BlueNoFeel;
 
         if (settings.EnableAlertSound &&
             !_audioSuppressed &&
@@ -239,7 +246,6 @@ public sealed class WarningEngine
         var simulationEventId =
             "SIM-" + DateTime.Now.ToString("yyyyMMddHHmmssfff");
 
-        // 点击「立即模拟」的时刻即作为发震时刻
         var shockTime = DateTime.UtcNow.AddHours(8);
 
         try
@@ -404,7 +410,6 @@ public sealed class WarningEngine
         _audio.ScheduleRestoreAfter10Seconds();
     }
 
-    // 根据烈度区间与倒计时决定要播放的音频序列
     private void PlayReportAudio(
         WarningState state,
         double countdown,
@@ -426,7 +431,6 @@ public sealed class WarningEngine
 
         _audio.PlaySequence(cues, token);
 
-        // 更新报音频叠加播放，不打断上面的序列
         if (isUpdateReport)
             _audio.PlayOverlay(UpdateAudio, token);
     }
@@ -438,10 +442,16 @@ public sealed class WarningEngine
         bool tierChanged,
         bool driftExceeded)
     {
+        if (tier == WarningTier.BlueNoFeel)
+        {
+            if (!isFirst && !tierChanged && !driftExceeded)
+                return [];
+
+            return BuildBlueNoFeelCues(countdown, isFirst);
+        }
+
         if (countdown <= 0)
         {
-            // 上一报的音频还在播时，按到达逻辑打断重播；
-            // 已经播完（其末尾自带到达播报）则不再补播
             if (!isFirst && !_audio.IsPlaying)
                 return [];
 
@@ -503,6 +513,42 @@ public sealed class WarningEngine
         new AudioCue(ArrivedAudio, 0),
         new AudioCue(ArrivedFile(tier), 0)
     ];
+
+    private List<AudioCue> BuildBlueNoFeelCues(
+        double countdown,
+        bool isFirst)
+    {
+        if (countdown <= 0)
+        {
+            if (!isFirst && !_audio.IsPlaying)
+                return [];
+
+            return ArrivalCues(WarningTier.BlueNoFeel);
+        }
+
+        if (countdown >= BlueNoFeelLongThreshold)
+        {
+            const string blue = "eew_blue_nofeel.mp3";
+
+            var oneBlue = _audio.GetDurationSeconds(blue);
+            var delayToArrival =
+                Math.Max(0, countdown - oneBlue);
+
+            return
+            [
+                new AudioCue(blue, 0),
+                new AudioCue(ArrivedAudio, 0, delayToArrival),
+                new AudioCue(
+                    ArrivedFile(WarningTier.BlueNoFeel),
+                    0)
+            ];
+        }
+
+        if (!isFirst && !_audio.IsPlaying)
+            return [];
+
+        return ArrivalCues(WarningTier.BlueNoFeel);
+    }
 
     private static bool IsSameEvent(
         string previousEventId,
