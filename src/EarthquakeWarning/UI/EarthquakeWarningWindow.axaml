@@ -6,13 +6,16 @@
         CanResize="False"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterScreen">
-  <Border x:Name="RootBorder"
-          Background="#3764FF"
-          BorderBrush="#3C3C3C"
-          BorderThickness="4"
-          CornerRadius="22"
-          Padding="48"
-          Opacity="1">
+  <Viewbox Stretch="Uniform">
+    <Border x:Name="RootBorder"
+            Width="1280"
+            Height="720"
+            Background="#3764FF"
+            BorderBrush="#3C3C3C"
+            BorderThickness="4"
+            CornerRadius="22"
+            Padding="48"
+            Opacity="1">
     <Grid RowDefinitions="132,1*,182">
       <Grid Grid.Row="0">
         <Image x:Name="TierImage"
@@ -204,5 +207,6 @@
         </StackPanel>
       </Grid>
     </Grid>
-  </Border>
+    </Border>
+  </Viewbox>
 </Window>

@@ -28,6 +28,7 @@ public partial class EarthquakeWarningWindow : Window
     private CancellationTokenSource? _marqueeCts;
     private DispatcherTimer? _scaleWatcher;
     private double _lastScaling;
+    private Avalonia.PixelRect _lastBounds;
 
     public bool UserRequestedClose { get; private set; }
 
@@ -56,47 +57,47 @@ public partial class EarthquakeWarningWindow : Window
 
     private void StartScaleWatcher()
     {
-        _lastScaling = RenderScaling;
-        ApplyScaleLayout(_lastScaling);
+        UpdateLayoutForScreen();
 
         _scaleWatcher = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
-        _scaleWatcher.Tick += (_, _) => CheckScale();
+        _scaleWatcher.Tick += (_, _) => CheckScreen();
         _scaleWatcher.Start();
     }
 
-    private void CheckScale()
+    private void CheckScreen()
     {
-        var scaling = RenderScaling;
-
-        if (Math.Abs(scaling - _lastScaling) < 0.001) return;
-
-        _lastScaling = scaling;
-        ApplyScaleLayout(scaling);
-
-        var screen = Screens.Primary;
+        var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
         if (screen is null) return;
 
-        var scale = Math.Max(1.0, scaling);
-        Width = Math.Max(1100, screen.Bounds.Width / scale / 2.0);
-        Height = Math.Max(620, screen.Bounds.Height / scale / 2.0);
+        var bounds = screen.Bounds;
+        if (Math.Abs(screen.Scaling - _lastScaling) < 0.001 && bounds == _lastBounds) return;
 
-        var widthPx = Width * scaling;
-        var heightPx = Height * scaling;
-        Position = new Avalonia.PixelPoint(
-            screen.Bounds.X + (int)((screen.Bounds.Width - widthPx) / 2),
-            screen.Bounds.Y + (int)((screen.Bounds.Height - heightPx) / 2));
+        UpdateLayoutForScreen();
     }
 
-    private void ApplyScaleLayout(double scaling)
+    private void UpdateLayoutForScreen()
     {
-        var delta = Math.Max(0.0, scaling - 1.0);
-        TitleText.LetterSpacing = delta * 4;
-        InfoGrid.ColumnSpacing = 32 + delta * 20;
+        var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
+        if (screen is null) return;
 
-        var offsetTitle = delta * 80;
-        var offsetInfo = delta * 60;
-        TitleText.RenderTransform = new TranslateTransform(0, -offsetTitle);
-        InfoGrid.RenderTransform = new TranslateTransform(0, offsetInfo);
+        var bounds = screen.Bounds;
+        _lastScaling = screen.Scaling;
+        _lastBounds = bounds;
+
+        var scale = Math.Max(1.0, screen.Scaling);
+        var width = Math.Max(1100, bounds.Width / scale / 2.0);
+        var height = Math.Max(620, bounds.Height / scale / 2.0);
+
+        Width = width;
+        Height = height;
+
+        var area = screen.WorkingArea;
+        var widthPx = width * scale;
+        var heightPx = height * scale;
+
+        Position = new Avalonia.PixelPoint(
+            area.X + (int)Math.Round((area.Width - widthPx) / 2.0),
+            area.Y + (int)Math.Round((area.Height - heightPx) / 2.0));
     }
 
     private void StartMarquee()
