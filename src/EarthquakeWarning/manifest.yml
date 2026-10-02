@@ -5,6 +5,6 @@ description: 一个现代化UI的地震预警插件，提供多种数据源选�
 entranceAssembly: "Voyage.EarthquakeWarning.dll"
 author: Voyage Project
 url: https://github.com/FengLinOvO/VoyageEarthquakeWarningForClassisland
-version: 1.2.0.0
+version: 1.2.1.0
 icon: icon.png
 readme: README.md
