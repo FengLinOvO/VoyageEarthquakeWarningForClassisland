@@ -340,13 +340,7 @@ public sealed class WarningEngine
 
         if (isFirst)
         {
-            if (countdown >= LongAudioCountdownSeconds)
-            {
-                var longFile = LongFile(tier);
-                var longDuration = _audio.GetDurationSeconds(longFile);
-
-                return [new AudioCue(longFile, 0), BuildSecondsCue(tier, countdown, LongAudioOffsetSeconds, longDuration)];
-            }
+            if (countdown >= LongAudioCountdownSeconds) return [new AudioCue(LongFile(tier), 0), BuildSecondsCue(tier, countdown, LongAudioOffsetSeconds)];
 
             return [BuildSecondsCue(tier, countdown, SecondsAudioOffsetSeconds)];
         }
@@ -356,20 +350,13 @@ public sealed class WarningEngine
         return [BuildSecondsCue(tier, countdown, SecondsAudioOffsetSeconds)];
     }
 
-    private AudioCue BuildSecondsCue(WarningTier tier, double countdown, double offsetSeconds, double precedingSeconds = 0)
+    private AudioCue BuildSecondsCue(WarningTier tier, double countdown, double offsetSeconds)
     {
         var file = SecondsFile(tier);
         var duration = _audio.GetDurationSeconds(file);
         var available = duration - offsetSeconds;
 
-        if (countdown > available)
-        {
-            var overshoot = countdown - available;
-            var delay = Math.Max(0, overshoot - precedingSeconds);
-            var start = Math.Max(0, precedingSeconds - overshoot);
-
-            return new AudioCue(file, start, delay);
-        }
+        if (countdown > available) return new AudioCue(file, 0, countdown - available);
 
         return new AudioCue(file, Math.Max(0, available - countdown));
     }
