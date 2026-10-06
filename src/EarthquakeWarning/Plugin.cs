@@ -16,6 +16,9 @@ public sealed class Plugin : PluginBase
     public static SettingsStore? SettingsStoreInstance { get; private set; }
     public static GeoLocationService? GeoLocationServiceInstance { get; private set; }
     public static EewService? EewServiceInstance { get; private set; }
+    public static AudioService? AudioServiceInstance { get; private set; }
+    public static WarningEngine? WarningEngineInstance { get; private set; }
+    public static WarningWindowService? WarningWindowServiceInstance { get; private set; }
 
     public PluginSettings Settings { get; private set; } = null!;
     public string ConfigDirectory { get; private set; } = null!;
@@ -27,6 +30,17 @@ public sealed class Plugin : PluginBase
         Directory.CreateDirectory(ConfigDirectory);
         Settings = PluginSettings.Load(Path.Combine(ConfigDirectory, "settings.json"));
 
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            if (e.ExceptionObject is Exception ex) ErrorReporter.ReportCrash(ex, "AppDomain.UnhandledException");
+        };
+
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            ErrorReporter.Report(e.Exception, "TaskScheduler.UnobservedTaskException");
+            e.SetObserved();
+        };
+
         services.AddSingleton<SettingsStore>(sp =>
         {
             var value = new SettingsStore();
@@ -34,7 +48,12 @@ public sealed class Plugin : PluginBase
             return value;
         });
 
-        services.AddSingleton<AudioService>();
+        services.AddSingleton<AudioService>(sp =>
+        {
+            var value = new AudioService();
+            AudioServiceInstance = value;
+            return value;
+        });
 
         services.AddSingleton<GeoLocationService>(sp =>
         {
@@ -43,7 +62,12 @@ public sealed class Plugin : PluginBase
             return value;
         });
 
-        services.AddSingleton<WarningEngine>();
+        services.AddSingleton<WarningEngine>(sp =>
+        {
+            var value = ActivatorUtilities.CreateInstance<WarningEngine>(sp);
+            WarningEngineInstance = value;
+            return value;
+        });
 
         services.AddSingleton<EewService>(sp =>
         {
@@ -52,7 +76,13 @@ public sealed class Plugin : PluginBase
             return value;
         });
 
-        services.AddSingleton<WarningWindowService>();
+        services.AddSingleton<WarningWindowService>(sp =>
+        {
+            var value = new WarningWindowService();
+            WarningWindowServiceInstance = value;
+            return value;
+        });
+
         services.AddHostedService(sp => sp.GetRequiredService<EewService>());
 
         services.AddNotificationProvider<EewNotificationProvider, GeneralSettingsPage>();

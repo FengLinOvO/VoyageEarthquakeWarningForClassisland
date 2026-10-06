@@ -196,6 +196,28 @@ public sealed class EewNotificationProvider : NotificationProviderBase
         line.Children.Add(countdownText);
         accentTexts.Add(countdownText);
 
+        if (state.IsSimulation)
+        {
+            line.Children.Add(new Border
+            {
+                Background = new SolidColorBrush(Colors.White),
+                CornerRadius = new Avalonia.CornerRadius(0),
+                Padding = new Avalonia.Thickness(10, 2, 10, 2),
+                VerticalAlignment = VerticalAlignment.Center,
+                Child = new TextBlock
+                {
+                    Text = "模拟",
+                    FontSize = 22,
+                    FontWeight = Avalonia.Media.FontWeight.Bold,
+                    Foreground = new SolidColorBrush(Color.Parse("#DC2828")),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextAlignment = TextAlignment.Center,
+                    RenderTransform = new TranslateTransform(0, 3)
+                }
+            });
+        }
+
         var durationSeconds = Math.Max(8, Math.Max(0, state.CountdownSeconds)
             + Plugin.Current!.Settings.ReleaseSeconds + 2);
 

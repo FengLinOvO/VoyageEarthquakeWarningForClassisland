@@ -124,7 +124,9 @@ public sealed partial class EewService : BackgroundService
             Plugin.Current!.Settings.ApiRecentDataText =
                 $"中国地震预警网第{d.Updates}报，{d.ShockTime}在{d.PlaceName}附近({d.Latitude:0.###},{d.Longitude:0.###})正在发生{d.Magnitude}级地震，震源深度{depth:0.#}km，预估最大烈度{d.EpiIntensity:0.#}";
 
-            try { await _engine.ProcessAsync(d, false, token); } catch { }
+            try { await _engine.ProcessAsync(d, false, token); }
+            catch (OperationCanceledException) { }
+            catch (Exception ex) { ErrorReporter.Report(ex, "EewService.ProcessAsync"); }
         }
     }
 
@@ -181,6 +183,8 @@ public sealed partial class EewService : BackgroundService
         Plugin.Current!.Settings.ApiRecentDataText =
             $"中国地震预警网第{d.Updates}报，{d.ShockTime}在{d.PlaceName}附近({d.Latitude:0.###},{d.Longitude:0.###})正在发生{d.Magnitude}级地震，震源深度{depth:0.#}km";
 
-        await _engine.ProcessAsync(d, false, token);
+        try { await _engine.ProcessAsync(d, false, token); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { ErrorReporter.Report(ex, "EewService.ProcessAsync"); }
     }
 }

@@ -1,0 +1,117 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Voyage.EarthquakeWarning.UI.ErrorWindow"
+        Title="插件运行错误"
+        Width="780"
+        Height="560"
+        MinWidth="560"
+        MinHeight="400"
+        Background="#17171B"
+        SystemDecorations="None"
+        CanResize="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen">
+  <Border Background="#17171B"
+          BorderBrush="#33333A"
+          BorderThickness="1"
+          CornerRadius="10">
+    <Grid RowDefinitions="Auto,Auto,1*,Auto"
+          Margin="24">
+      <StackPanel Grid.Row="0"
+                  Orientation="Horizontal"
+                  Spacing="12"
+                  Background="#17171B"
+                  PointerPressed="OnHeaderPressed">
+        <Border Width="14"
+                Height="14"
+                Background="#E0464B"
+                CornerRadius="2"
+                VerticalAlignment="Center"/>
+        <TextBlock Text="ClassIsland插件在运行中遇到错误"
+                   FontSize="26"
+                   FontWeight="Bold"
+                   Foreground="#F2F2F4"
+                   VerticalAlignment="Center"/>
+      </StackPanel>
+
+      <StackPanel Grid.Row="1"
+                  Spacing="8"
+                  Margin="0,16,0,0">
+        <TextBlock x:Name="DescriptionText"
+                   TextWrapping="Wrap"
+                   FontSize="14"
+                   Foreground="#C9C9CF"/>
+        <TextBlock x:Name="FeedbackText"
+                   TextWrapping="Wrap"
+                   FontSize="14"
+                   Foreground="#8F8F98"/>
+      </StackPanel>
+
+      <Border Grid.Row="2"
+              Background="#101014"
+              BorderBrush="#2C2C33"
+              BorderThickness="1"
+              CornerRadius="6"
+              Margin="0,16,0,0"
+              Padding="14">
+        <ScrollViewer>
+          <StackPanel Spacing="12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="错误类型"
+                         FontSize="13"
+                         FontWeight="Bold"
+                         Foreground="#E0464B"/>
+              <TextBlock x:Name="TypeText"
+                         TextWrapping="Wrap"
+                         FontSize="14"
+                         Foreground="#D6D6DC"/>
+            </StackPanel>
+            <StackPanel Spacing="4">
+              <TextBlock Text="错误内容"
+                         FontSize="13"
+                         FontWeight="Bold"
+                         Foreground="#E0464B"/>
+              <TextBlock x:Name="ContentText"
+                         TextWrapping="Wrap"
+                         FontSize="13"
+                         FontFamily="Consolas,Menlo,monospace"
+                         Foreground="#B9B9C2"/>
+            </StackPanel>
+            <StackPanel x:Name="LocationSection"
+                        Spacing="4"
+                        IsVisible="False">
+              <TextBlock Text="错误位置"
+                         FontSize="13"
+                         FontWeight="Bold"
+                         Foreground="#E0464B"/>
+              <TextBlock x:Name="LocationText"
+                         TextWrapping="Wrap"
+                         FontSize="13"
+                         FontFamily="Consolas,Menlo,monospace"
+                         Foreground="#B9B9C2"/>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+
+      <StackPanel Grid.Row="3"
+                  Orientation="Horizontal"
+                  Spacing="12"
+                  HorizontalAlignment="Right"
+                  Margin="0,16,0,0">
+        <Button x:Name="IssuesButton"
+                Content="前往Issues"/>
+        <Button x:Name="LogFolderButton"
+                Content="日志文件夹"/>
+        <Button x:Name="CloseButton"
+                Content="关闭"
+                Background="#3764FF"
+                Foreground="#FFFFFF"/>
+        <Button x:Name="RestartButton"
+                Content="重启软件"
+                Background="#E0464B"
+                Foreground="#FFFFFF"/>
+      </StackPanel>
+    </Grid>
+  </Border>
+</Window>

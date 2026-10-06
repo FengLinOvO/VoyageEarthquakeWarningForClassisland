@@ -16,7 +16,6 @@ public sealed class PluginSettings : ObservableObject
     private bool _enableAlertSound = true;
     private bool _topMost = true;
     private bool _forceVolume;
-    private bool _autoLocationStatus;
     private string _apiConnectionTimeText = "未连接";
     private string _apiRecentDataText = "暂无数据";
 
@@ -31,7 +30,6 @@ public sealed class PluginSettings : ObservableObject
     public bool EnableAlertSound { get => _enableAlertSound; set => SetProperty(ref _enableAlertSound, value); }
     public bool TopMost { get => _topMost; set => SetProperty(ref _topMost, value); }
     public bool ForceVolume { get => _forceVolume; set => SetProperty(ref _forceVolume, value); }
-    public bool AutoLocationStatus { get => _autoLocationStatus; set => SetProperty(ref _autoLocationStatus, value); }
     public string ApiConnectionTimeText { get => _apiConnectionTimeText; set => SetProperty(ref _apiConnectionTimeText, value); }
     public string ApiRecentDataText { get => _apiRecentDataText; set => SetProperty(ref _apiRecentDataText, value); }
 
@@ -39,10 +37,10 @@ public sealed class PluginSettings : ObservableObject
 
     public static List<SimulationReport> CreateDefaultSimulations() =>
     [
-        new SimulationReport { AlertDelaySeconds = 4.9, Latitude = 35.75, Longitude = 102.80, Magnitude = 5.9, EpiIntensity = 7.9, Depth = 10, Updates = 1 },
-        new SimulationReport { AlertDelaySeconds = 13.5, Latitude = 35.74, Longitude = 102.81, Magnitude = 6.3, EpiIntensity = 8.3, Depth = 10, Updates = 2 },
-        new SimulationReport { AlertDelaySeconds = 14.0, Latitude = 35.74, Longitude = 102.81, Magnitude = 6.8, EpiIntensity = 8.8, Depth = 10, Updates = 3 },
-        new SimulationReport { AlertDelaySeconds = 37.1, Latitude = 35.74, Longitude = 102.82, Magnitude = 6.0, EpiIntensity = 7.9, Depth = 10, Updates = 4 }
+        new SimulationReport { PlaceName = "甘肃临夏州积石山县", AlertDelaySeconds = 4.9, Latitude = 35.75, Longitude = 102.80, Magnitude = 5.9, EpiIntensity = 7.9, Depth = 10, Updates = 1 },
+        new SimulationReport { PlaceName = "甘肃临夏州积石山县", AlertDelaySeconds = 13.5, Latitude = 35.74, Longitude = 102.81, Magnitude = 6.3, EpiIntensity = 8.3, Depth = 10, Updates = 2 },
+        new SimulationReport { PlaceName = "甘肃临夏州积石山县", AlertDelaySeconds = 14.0, Latitude = 35.74, Longitude = 102.81, Magnitude = 6.8, EpiIntensity = 8.8, Depth = 10, Updates = 3 },
+        new SimulationReport { PlaceName = "甘肃临夏州积石山县", AlertDelaySeconds = 37.1, Latitude = 35.74, Longitude = 102.82, Magnitude = 6.0, EpiIntensity = 7.9, Depth = 10, Updates = 4 }
     ];
 
     public static PluginSettings Load(string path)

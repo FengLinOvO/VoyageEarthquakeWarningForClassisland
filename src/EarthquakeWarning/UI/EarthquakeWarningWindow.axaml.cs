@@ -27,6 +27,7 @@ public partial class EarthquakeWarningWindow : Window
     private readonly List<Marquee> _marquees = [];
     private CancellationTokenSource? _marqueeCts;
     private DispatcherTimer? _scaleWatcher;
+    private double _stripesWidth = -1;
     private double _lastScaling;
     private Avalonia.PixelRect _lastBounds;
 
@@ -53,6 +54,65 @@ public partial class EarthquakeWarningWindow : Window
             _marqueeCts?.Cancel();
             _scaleWatcher?.Stop();
         };
+    }
+
+    private void RefreshStripes()
+    {
+        var width = SimulationBadge.Bounds.Width;
+        var height = SimulationBadge.Bounds.Height;
+
+        if (width <= 0 || height <= 0) return;
+        if (Math.Abs(width - _stripesWidth) < 0.5) return;
+
+        _stripesWidth = width;
+        SimulationBadge.Clip = BottomRoundedClip(width, height);
+
+        const double thickness = 20;
+        const double spacing = 46;
+        var length = (width + height) * 1.6;
+        var geometry = new StreamGeometry();
+
+        using (var context = geometry.Open())
+        {
+            for (var x = -height; x <= width + height; x += spacing)
+            {
+                var centerY = height / 2;
+
+                context.BeginFigure(StripePoint(x, centerY, thickness / 2, length / 2), true);
+                context.LineTo(StripePoint(x, centerY, thickness / 2, -length / 2));
+                context.LineTo(StripePoint(x, centerY, -thickness / 2, -length / 2));
+                context.LineTo(StripePoint(x, centerY, -thickness / 2, length / 2));
+                context.EndFigure(true);
+            }
+        }
+
+        SimulationStripes.Data = geometry;
+    }
+
+    private static Avalonia.Point StripePoint(double centerX, double centerY, double x, double y)
+    {
+        const double cos = 0.70710678118654752;
+
+        return new Avalonia.Point(centerX + (x - y) * cos, centerY + (x + y) * cos);
+    }
+
+    private static Geometry BottomRoundedClip(double width, double height)
+    {
+        const double radius = 18;
+        var geometry = new StreamGeometry();
+
+        using (var context = geometry.Open())
+        {
+            context.BeginFigure(new Avalonia.Point(0, 0), true);
+            context.LineTo(new Avalonia.Point(width, 0));
+            context.LineTo(new Avalonia.Point(width, height - radius));
+            context.ArcTo(new Avalonia.Point(width - radius, height), new Avalonia.Size(radius, radius), 0, false, SweepDirection.Clockwise);
+            context.LineTo(new Avalonia.Point(radius, height));
+            context.ArcTo(new Avalonia.Point(0, height - radius), new Avalonia.Size(radius, radius), 0, false, SweepDirection.Clockwise);
+            context.EndFigure(true);
+        }
+
+        return geometry;
     }
 
     private void StartScaleWatcher()
@@ -251,6 +311,9 @@ public partial class EarthquakeWarningWindow : Window
         LocalIntensityText.Text = state.LocalIntensityText;
         NetworkText.Text = $"中国地震预警网 第{state.Updates}报";
         TitleText.Text = "地震预警";
+        SimulationBadge.IsVisible = state.IsSimulation;
+
+        if (state.IsSimulation) RefreshStripes();
 
         try
         {

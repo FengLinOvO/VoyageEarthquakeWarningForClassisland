@@ -10,13 +10,9 @@ public partial class EewService
 
         _simulationRunning = true;
 
-        try
-        {
-            await _engine.RunSimulationAsync(CancellationToken.None);
-        }
-        finally
-        {
-            _simulationRunning = false;
-        }
+        try { await _engine.RunSimulationAsync(); }
+        finally { _simulationRunning = false; }
     }
+
+    public void StopSimulation() => _engine.StopSimulation();
 }

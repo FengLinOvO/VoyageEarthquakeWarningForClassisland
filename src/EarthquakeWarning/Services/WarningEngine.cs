@@ -28,6 +28,7 @@ public sealed class WarningEngine
     private bool _audioSuppressed;
     private bool _isActive;
     private Task? _ticker;
+    private CancellationTokenSource? _simulation;
 
     public WarningEngine(AudioService audio, WarningWindowService window, SettingsStore settingsStore)
     {
@@ -39,6 +40,16 @@ public sealed class WarningEngine
 
     private void OnWindowUserClosed(object? sender, EventArgs e)
     {
+        WarningState? state;
+
+        lock (_sync) state = _state;
+
+        if (state?.IsSimulation == true)
+        {
+            StopSimulation();
+            return;
+        }
+
         _audioSuppressed = true;
         _audio.StopAll();
     }
@@ -75,7 +86,7 @@ public sealed class WarningEngine
         if (!isSimulation && !isWarningActive && countdown < -ArrivedGraceSeconds) return Task.CompletedTask;
 
         var tier = GetTier(localIntensity);
-        var state = CreateState(data, shockTime, now, distance, localIntensity, tier);
+        var state = CreateState(data, isSimulation, shockTime, now, distance, localIntensity, tier);
 
         bool isFirst;
         bool isUpdateReport;
@@ -140,9 +151,16 @@ public sealed class WarningEngine
         return Task.CompletedTask;
     }
 
-    public async Task RunSimulationAsync(CancellationToken token)
+    public async Task RunSimulationAsync()
     {
-        ResetForSimulation();
+        ResetRuntime();
+
+        _simulation?.Cancel();
+
+        var cts = new CancellationTokenSource();
+        _simulation = cts;
+
+        var token = cts.Token;
 
         var source = Plugin.Current!.Settings.Simulations ?? [];
         var list = source
@@ -193,10 +211,14 @@ public sealed class WarningEngine
             }
         }
         catch (OperationCanceledException) { }
-        catch (Exception) { }
+        catch (Exception ex) { ErrorReporter.Report(ex, "WarningEngine.RunSimulationAsync"); }
+        finally
+        {
+            if (ReferenceEquals(_simulation, cts)) _simulation = null;
+        }
     }
 
-    private void ResetForSimulation()
+    public void ResetRuntime()
     {
         lock (_sync)
         {
@@ -211,6 +233,12 @@ public sealed class WarningEngine
         _audio.StopAll();
 
         if (Plugin.Current!.Settings.WarningMode == WarningMode.IndependentUi) _window.Close();
+    }
+
+    public void StopSimulation()
+    {
+        try { _simulation?.Cancel(); } catch { }
+        ResetRuntime();
     }
 
     private void StartTicker(CancellationToken parentToken)
@@ -255,7 +283,7 @@ public sealed class WarningEngine
                             }
                         }
                     }
-                    catch (Exception) { }
+                    catch (Exception ex) { ErrorReporter.Report(ex, "WarningEngine.Ticker"); }
 
                     await Task.Delay(200, parentToken);
                 }
@@ -315,7 +343,10 @@ public sealed class WarningEngine
         {
             if (countdown >= LongAudioCountdownSeconds)
             {
-                return [new AudioCue(LongFile(tier), 0), BuildSecondsCue(tier, countdown, LongAudioOffsetSeconds)];
+                var longFile = LongFile(tier);
+                var longDuration = _audio.GetDurationSeconds(longFile);
+
+                return [new AudioCue(longFile, 0), BuildSecondsCue(tier, countdown, LongAudioOffsetSeconds, longDuration)];
             }
 
             return [BuildSecondsCue(tier, countdown, SecondsAudioOffsetSeconds)];
@@ -326,14 +357,22 @@ public sealed class WarningEngine
         return [BuildSecondsCue(tier, countdown, SecondsAudioOffsetSeconds)];
     }
 
-    private AudioCue BuildSecondsCue(WarningTier tier, double countdown, double offsetSeconds)
+    private AudioCue BuildSecondsCue(WarningTier tier, double countdown, double offsetSeconds, double precedingSeconds = 0)
     {
         var file = SecondsFile(tier);
         var duration = _audio.GetDurationSeconds(file);
+        var available = duration - offsetSeconds;
 
-        var start = Math.Max(0, duration - offsetSeconds - countdown);
+        if (countdown > available)
+        {
+            var overshoot = countdown - available;
+            var delay = Math.Max(0, overshoot - precedingSeconds);
+            var start = Math.Max(0, precedingSeconds - overshoot);
 
-        return new AudioCue(file, start);
+            return new AudioCue(file, start, delay);
+        }
+
+        return new AudioCue(file, Math.Max(0, available - countdown));
     }
 
     private static List<AudioCue> ArrivalCues(WarningTier tier) =>
@@ -409,29 +448,25 @@ public sealed class WarningEngine
         _ => "arrived_red.mp3"
     };
 
-    private WarningState CreateState(EewData data, DateTime shockTime, DateTime received, double distance, double localIntensity, WarningTier tier)
+    private WarningState CreateState(EewData data, bool isSimulation, DateTime shockTime, DateTime received, double distance, double localIntensity, WarningTier tier)
     {
-        var (bg, fg, name, sensation, icon) = TierVisual(tier);
+        var (bg, fg, sensation, icon) = TierVisual(tier);
 
         var state = new WarningState
         {
             EventId = data.EventId,
+            IsSimulation = isSimulation,
             PlaceName = data.PlaceName,
             ShockTimeText = shockTime.ToString("yyyy-MM-dd HH:mm:ss"),
             MagnitudeText = data.Magnitude,
-            DepthKm = data.Depth ?? 0,
-            EpicenterIntensity = data.EpiIntensity,
             Updates = data.Updates,
             Tier = tier,
             LocalIntensity = localIntensity,
             DistanceText = $"{distance:0.#} km",
-            TierText = name,
             Sensation = sensation,
             BackgroundHex = bg,
             ForegroundHex = fg,
             IconPath = icon,
-            ShockTimeBeijing = shockTime,
-            ReceivedAtBeijing = received,
             ArrivalTimeBeijing = received.AddSeconds(Math.Max(0, WaveArrivalCalculator.GetCountdownSeconds(distance, shockTime, received)))
         };
 
@@ -442,18 +477,18 @@ public sealed class WarningEngine
         return state;
     }
 
-    private static (string Bg, string Fg, string Name, string Sensation, string Icon) TierVisual(WarningTier tier)
+    private static (string Bg, string Fg, string Sensation, string Icon) TierVisual(WarningTier tier)
     {
-        var pluginDirectory = Path.GetDirectoryName(typeof(WarningEngine).Assembly.Location) ?? AppContext.BaseDirectory;
-        var img = Path.Combine(pluginDirectory, "Assets", "Images");
+        var directory = Path.GetDirectoryName(typeof(WarningEngine).Assembly.Location) ?? AppContext.BaseDirectory;
+        var img = Path.Combine(directory, "Assets", "Images");
 
         return tier switch
         {
-            WarningTier.BlueNoFeel => ("#3764FF", "#FFFFFF", "蓝色地震预警（无感）", "无感地震\n请勿惊慌", Path.Combine(img, "blue.png")),
-            WarningTier.BlueFeel => ("#3764FF", "#FFFFFF", "蓝色地震预警（有感）", "轻微有感地震\n请勿惊慌", Path.Combine(img, "blue.png")),
-            WarningTier.Yellow => ("#FAE600", "#000000", "黄色地震预警", "显著有感地震\n注意避险", Path.Combine(img, "yellow.png")),
-            WarningTier.Orange => ("#F09614", "#000000", "橙色地震预警", "破坏性地震\n就近避险", Path.Combine(img, "orange.png")),
-            _ => ("#DC2828", "#FFFFFF", "红色地震预警", "严重破坏性地震\n紧急避险", Path.Combine(img, "red.png"))
+            WarningTier.BlueNoFeel => ("#3764FF", "#FFFFFF", "无感地震\n请勿惊慌", Path.Combine(img, "blue.png")),
+            WarningTier.BlueFeel => ("#3764FF", "#FFFFFF", "轻微有感地震\n请勿惊慌", Path.Combine(img, "blue.png")),
+            WarningTier.Yellow => ("#FAE600", "#000000", "显著有感地震\n注意避险", Path.Combine(img, "yellow.png")),
+            WarningTier.Orange => ("#F09614", "#000000", "破坏性地震\n就近避险", Path.Combine(img, "orange.png")),
+            _ => ("#DC2828", "#FFFFFF", "严重破坏性地震\n紧急避险", Path.Combine(img, "red.png"))
         };
     }
 

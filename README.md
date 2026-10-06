@@ -45,6 +45,16 @@ API主页：https://api.odysphere.tech/
 
 ![ClassIsland原生横幅预警·已到达](https://raw.githubusercontent.com/FengLinOvO/VoyageEarthquakeWarningForClassisland/main/src/EarthquakeWarning/Assets/Images/ari_orange.png)
 
+### 独立错误提示
+
+#### 崩溃性错误
+
+![崩溃性错误](https://raw.githubusercontent.com/FengLinOvO/VoyageEarthquakeWarningForClassisland/main/src/EarthquakeWarning/Assets/Images/bug_ui_2.png)
+
+#### 非崩溃性错误
+
+![非崩溃性错误](https://raw.githubusercontent.com/FengLinOvO/VoyageEarthquakeWarningForClassisland/main/src/EarthquakeWarning/Assets/Images/bug_ui_1.png)
+
 ## 功能特点
 
 - 接收中国地震预警网地震预警信息
@@ -62,7 +72,7 @@ API主页：https://api.odysphere.tech/
 - 地震预警信息由中国地震台网中心产出并下发，API由 Voyage Project API 与 MIUI API 提供；作者不对地震预警信息的准确性、有效性等作任何承诺与保证，对于使用本API造成的一切后果与作者无关。
 - 本插件仅分发地震预警信息，并非地震预测。
 - 作者对因信息延迟、误报或漏报所造成的任何损失不承担法律责任，请以官方发布信息为准。
-- 本项目使用AI辅助编写，发布前经过人工审查。
+- 本项目开发采用Vibe Coding，发布前经过人工审查。
 
 ## 许可证
 

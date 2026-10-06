@@ -72,10 +72,14 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
 
         DefaultSimulationButton.Click += (_, _) =>
         {
-            Settings.Simulations = PluginSettings.CreateDefaultSimulations();
+            Settings.Simulations =
+                PluginSettings.CreateDefaultSimulations();
+
             RenderSimulations();
             Store.Save();
         };
+
+        StopSimulationButton.Click += (_, _) => Eew?.StopSimulation();
 
         RunSimulationButton.Click += async (_, _) =>
         {
@@ -134,7 +138,6 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
             {
                 LatitudeBox.Text = result.Lat.ToString("0.######", CultureInfo.InvariantCulture);
                 LongitudeBox.Text = result.Lng.ToString("0.######", CultureInfo.InvariantCulture);
-                Settings.AutoLocationStatus = true;
                 SaveUi();
             }
         }

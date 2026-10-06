@@ -14,9 +14,10 @@
             BorderBrush="#3C3C3C"
             BorderThickness="4"
             CornerRadius="22"
-            Padding="48"
             Opacity="1">
-    <Grid RowDefinitions="132,1*,182">
+    <Grid>
+    <Grid Margin="48"
+          RowDefinitions="132,1*,182">
       <Grid Grid.Row="0">
         <Image x:Name="TierImage"
                Width="112"
@@ -206,6 +207,45 @@
                      TextAlignment="Center"/>
         </StackPanel>
       </Grid>
+    </Grid>
+      <Border x:Name="SimulationBadge"
+              Background="#FFFFFF"
+              CornerRadius="0,0,18,18"
+              Height="88"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Bottom"
+              Margin="0"
+              ClipToBounds="True"
+              IsVisible="False">
+        <Grid>
+          <Path x:Name="SimulationStripes"
+                Fill="#DC2828"/>
+          <Border Background="#FFFFFF"
+                  Padding="30,0"
+                  Height="68"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
+            <TextBlock x:Name="SimulationText"
+                       Text="模拟"
+                       FontSize="72"
+                       FontWeight="Bold"
+                       Foreground="#DC2828"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextAlignment="Center"
+                       RenderTransformOrigin="0.5,0.5">
+              <TextBlock.RenderTransform>
+                <TransformGroup>
+                  <ScaleTransform ScaleX="1"
+                                  ScaleY="0.84"/>
+                  <TranslateTransform X="0"
+                                      Y="6"/>
+                </TransformGroup>
+              </TextBlock.RenderTransform>
+            </TextBlock>
+          </Border>
+        </Grid>
+      </Border>
     </Grid>
     </Border>
   </Viewbox>

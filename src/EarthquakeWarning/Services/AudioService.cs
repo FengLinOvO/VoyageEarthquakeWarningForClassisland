@@ -81,7 +81,7 @@ public sealed class AudioService
             }
         }
         catch (OperationCanceledException) { }
-        catch { }
+        catch (Exception ex) { ErrorReporter.Report(ex, "AudioService.RunSequence"); }
         finally
         {
             lock (_gate)
@@ -160,7 +160,7 @@ public sealed class AudioService
     {
         try { await PlayFileAsync(cue, cts.Token, true).ConfigureAwait(false); }
         catch (OperationCanceledException) { }
-        catch { }
+        catch (Exception ex) { ErrorReporter.Report(ex, "AudioService.RunOverlay"); }
         finally
         {
             lock (_gate)

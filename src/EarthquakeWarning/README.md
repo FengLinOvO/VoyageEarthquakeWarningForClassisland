@@ -43,6 +43,16 @@ ClassIsland 用户在申请时，请务必在使用用途栏填写“ClassIsland
 
 ![ClassIsland原生横幅预警·已到达](https://raw.githubusercontent.com/FengLinOvO/VoyageEarthquakeWarningForClassisland/main/src/EarthquakeWarning/Assets/Images/ari_orange.png)
 
+### 独立错误提示
+
+#### 崩溃性错误
+
+![崩溃性错误](https://raw.githubusercontent.com/FengLinOvO/VoyageEarthquakeWarningForClassisland/main/src/EarthquakeWarning/Assets/Images/bug_ui_2.png)
+
+#### 非崩溃性错误
+
+![非崩溃性错误](https://raw.githubusercontent.com/FengLinOvO/VoyageEarthquakeWarningForClassisland/main/src/EarthquakeWarning/Assets/Images/bug_ui_1.png)
+
 ## 功能特点
 
 - 接收中国地震预警网地震预警信息

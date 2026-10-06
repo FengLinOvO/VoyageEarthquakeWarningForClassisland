@@ -7,7 +7,6 @@ public sealed class WarningState : ObservableObject
     private double _localIntensity;
     private string _localIntensityText = "0.0";
     private string _distanceText = "--";
-    private string _tierText = "蓝色地震预警（无感）";
     private string _sensation = "无感地震，请勿惊慌";
     private string _background = "#3764FF";
     private string _foreground = "#FFFFFF";
@@ -18,9 +17,8 @@ public sealed class WarningState : ObservableObject
     public string PlaceName { get; init; } = "";
     public string ShockTimeText { get; init; } = "";
     public string MagnitudeText { get; init; } = "";
-    public double DepthKm { get; init; }
-    public double EpicenterIntensity { get; init; }
     public int Updates { get; init; }
+    public bool IsSimulation { get; init; }
 
     public double CountdownSeconds
     {
@@ -50,12 +48,6 @@ public sealed class WarningState : ObservableObject
     {
         get => _distanceText;
         set => SetProperty(ref _distanceText, value);
-    }
-
-    public string TierText
-    {
-        get => _tierText;
-        set => SetProperty(ref _tierText, value);
     }
 
     public string Sensation
@@ -90,8 +82,6 @@ public sealed class WarningState : ObservableObject
 
     public WarningTier Tier { get; set; }
     public DateTime ArrivalTimeBeijing { get; set; }
-    public DateTime ReceivedAtBeijing { get; set; }
-    public DateTime ShockTimeBeijing { get; set; }
 
     public void UpdateCountdown(DateTime nowBeijing)
     {
