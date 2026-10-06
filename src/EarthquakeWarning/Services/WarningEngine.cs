@@ -97,8 +97,11 @@ public sealed class WarningEngine
         lock (_sync)
         {
             var previousState = _state;
+            var sameEvent = _isActive && previousState is not null && IsSameEvent(previousState.EventId, data.EventId);
 
-            isFirst = !_isActive || previousState is null;
+            if (_isActive && previousState is not null && !sameEvent && localIntensity <= previousState.LocalIntensity) return Task.CompletedTask;
+
+            isFirst = !_isActive || previousState is null || !sameEvent;
 
             var reportInterval = isFirst ? 0 : (now - _lastReceivedBeijing).TotalSeconds;
 
@@ -108,9 +111,7 @@ public sealed class WarningEngine
 
             driftExceeded = !isFirst && Math.Abs(countdown - predictedCountdown) > DriftToleranceSeconds;
 
-            isUpdateReport = !isFirst && previousState is not null &&
-                IsSameEvent(previousState.EventId, data.EventId) &&
-                previousState.Updates != data.Updates;
+            isUpdateReport = !isFirst && sameEvent && previousState!.Updates != data.Updates;
 
             allowReopen = isFirst || isUpdateReport;
 
@@ -316,9 +317,7 @@ public sealed class WarningEngine
     {
         var cues = BuildAudioCues(state.Tier, countdown, isFirst, tierChanged, driftExceeded);
 
-        if (cues.Count == 0) return;
-
-        _audio.PlaySequence(cues, token);
+        if (cues.Count > 0) _audio.PlaySequence(cues, token);
 
         if (isUpdateReport) _audio.PlayOverlay(UpdateAudio, token);
     }
