@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -71,14 +72,60 @@ public static class ErrorReporter
         ["SecurityException"] = "安全权限不足",
         ["SerializationException"] = "序列化失败",
         ["CryptographicException"] = "加密或解密失败",
-        ["AggregateException"] = "多个错误同时发生",
+        ["CryptographicUnexpectedOperationException"] = "加密操作出现意外结果",
         ["RegexMatchTimeoutException"] = "正则匹配超时",
         ["UriFormatException"] = "网址格式不正确",
         ["DecoderFallbackException"] = "字符解码失败",
         ["EncoderFallbackException"] = "字符编码失败",
         ["TaskSchedulerException"] = "任务调度失败",
         ["XamlLoadException"] = "界面布局文件加载失败",
-        ["XamlParseException"] = "界面布局文件解析失败"
+        ["XamlParseException"] = "界面布局文件解析失败",
+        ["ThreadAbortException"] = "线程被强制中止",
+        ["ThreadInterruptedException"] = "线程等待被中断",
+        ["ThreadStateException"] = "线程状态无效",
+        ["ThreadStartException"] = "线程启动失败",
+        ["MarshalDirectiveException"] = "托管与非托管数据转换失败",
+        ["RuntimeWrappedException"] = "非托管代码引发的异常",
+        ["AmbiguousMatchException"] = "成员匹配不唯一",
+        ["MethodAccessException"] = "方法访问被拒绝",
+        ["FieldAccessException"] = "字段访问被拒绝",
+        ["MemberAccessException"] = "成员访问被拒绝",
+        ["MissingMemberException"] = "未找到指定的成员",
+        ["InvalidProgramException"] = "程序包含无效指令",
+        ["VerificationException"] = "代码安全验证失败",
+        ["CannotUnloadAppDomainException"] = "应用程序域卸载失败",
+        ["ContextMarshalException"] = "上下文数据转换失败",
+        ["InsufficientExecutionStackException"] = "可用调用栈空间不足",
+        ["HostProtectionException"] = "宿主保护限制阻止了操作",
+        ["InvalidTimeZoneException"] = "时区数据无效",
+        ["ApplicationException"] = "应用程序运行错误",
+        ["SystemException"] = "系统运行错误",
+        ["DataException"] = "数据访问错误",
+        ["ConstraintException"] = "数据约束冲突",
+        ["DuplicateNameException"] = "名称重复",
+        ["EvaluateException"] = "表达式求值失败",
+        ["SyntaxErrorException"] = "数据语法错误",
+        ["ReadOnlyException"] = "目标数据为只读",
+        ["NoNullAllowedException"] = "该字段不允许为空",
+        ["VersionNotFoundException"] = "未找到指定的数据版本",
+        ["DeletedRowInaccessibleException"] = "访问了已删除的数据行",
+        ["RowNotInTableException"] = "数据行不属于当前表",
+        ["InRowChangingEventException"] = "在行变更事件中执行了无效操作",
+        ["NotFiniteNumberException"] = "数值不是有限数",
+        ["InvalidOleVariantTypeException"] = "OLE 变体类型无效",
+        ["SafeArrayTypeMismatchException"] = "数组元素类型不匹配",
+        ["SafeArrayRankMismatchException"] = "数组维数不匹配",
+        ["RemotingException"] = "远程调用失败",
+        ["HttpIOException"] = "网络数据读取失败",
+        ["HttpProtocolException"] = "网络协议错误",
+        ["XmlSchemaException"] = "XML 结构校验失败",
+        ["ConfigurationErrorsException"] = "配置文件读取失败",
+        ["ConfigurationException"] = "配置内容无效",
+        ["SettingsPropertyNotFoundException"] = "未找到指定的配置项",
+        ["AbandonedMutexException"] = "互斥体已被放弃",
+        ["SemaphoreFullException"] = "信号量已达上限",
+        ["WaitHandleCannotBeOpenedException"] = "无法打开指定的等待句柄",
+        ["Exception"] = "未知异常"
     };
 
     private static readonly string[] FatalNames =
@@ -92,6 +139,7 @@ public static class ErrorReporter
 
     private static readonly Regex FrameRegex = new(@"in\s+(.+?):line\s+(\d+)", RegexOptions.Compiled);
     private static readonly object Gate = new();
+    private static readonly HashSet<string> Suppressed = [];
     private static string[]? _sourceNames;
     private static DateTime _lastShownAt = DateTime.MinValue;
     private static string _lastSignature = "";
@@ -114,9 +162,48 @@ public static class ErrorReporter
     public static string LogFolder =>
         Plugin.Current is null ? "classisland的插件配置目录下的log" : Path.Combine(Plugin.Current.ConfigDirectory, "log");
 
-    public static void Report(Exception ex, string source) => Handle(Create(ex, source, IsFatal(ex)));
+    public static void Report(Exception ex, string source, bool fromPlugin = false)
+    {
+        if (!ShouldReport(ex, fromPlugin)) return;
 
-    public static void ReportCrash(Exception ex, string source) => Handle(Create(ex, source, true));
+        Handle(Create(ex, source, IsSystemLevel(ex)));
+    }
+
+    public static void ReportCrash(Exception ex, string source, bool fromPlugin = false)
+    {
+        if (!ShouldReport(ex, fromPlugin)) return;
+
+        Handle(Create(ex, source, true));
+    }
+
+    public static void Suppress(ErrorReport report)
+    {
+        lock (Gate) Suppressed.Add(Key(report));
+    }
+
+    public static void MarkRecovered(string source)
+    {
+        lock (Gate) Suppressed.RemoveWhere(key => key.StartsWith($"{source}|", StringComparison.Ordinal));
+    }
+
+    private static string Key(ErrorReport report) => $"{report.Source}|{report.Type}";
+
+    private static bool ShouldReport(Exception ex, bool fromPlugin) => fromPlugin || IsSystemLevel(ex) || IsOurs(ex);
+
+    private static bool IsOurs(Exception ex)
+    {
+        for (var current = ex; current is not null; current = current.InnerException)
+        {
+            var frames = new StackTrace(current, false).GetFrames();
+
+            if (frames is null) continue;
+
+            foreach (var frame in frames)
+                if (frame.GetMethod()?.DeclaringType?.Assembly == typeof(ErrorReporter).Assembly) return true;
+        }
+
+        return false;
+    }
 
     private static ErrorReport Create(Exception ex, string source, bool fatal)
     {
@@ -131,13 +218,13 @@ public static class ErrorReporter
 
     private static void Handle(ErrorReport report)
     {
+        WriteLogFile(report, Format(report));
+
+        var signature = $"{report.Type}|{report.Message}|{report.Source}";
+
         lock (Gate)
         {
-            var text = Format(report);
-
-            WriteLogFile(report, text);
-
-            var signature = $"{report.Type}|{report.Message}|{report.Source}";
+            if (!report.Fatal && Suppressed.Contains(Key(report))) return;
 
             if (signature == _lastSignature && (DateTime.UtcNow - _lastShownAt).TotalSeconds < 5) return;
 
@@ -158,11 +245,14 @@ public static class ErrorReporter
 
     private static void PlayAlertSound() { try { MessageBeep(0x00000010); } catch { } }
 
-    private static bool IsFatal(Exception ex)
+    private static bool IsSystemLevel(Exception ex)
     {
-        for (var type = ex.GetType(); type is not null; type = type.BaseType)
+        for (var current = ex; current is not null; current = current.InnerException)
         {
-            if (Array.IndexOf(FatalNames, type.Name) >= 0) return true;
+            for (var type = current.GetType(); type is not null; type = type.BaseType)
+            {
+                if (Array.IndexOf(FatalNames, type.Name) >= 0) return true;
+            }
         }
 
         return false;
@@ -170,6 +260,20 @@ public static class ErrorReporter
 
     private static string TypeName(Exception ex)
     {
+        if (ex is AggregateException aggregate)
+        {
+            var names = aggregate.Flatten().InnerExceptions.Select(TypeName).Distinct().ToList();
+
+            return names.Count > 0 ? string.Join("；", names) : "任务执行失败";
+        }
+
+        for (var inner = ex.InnerException; inner is not null; inner = inner.InnerException)
+        {
+            if (inner is TimeoutException) return "操作超时未完成";
+        }
+
+        if (ex is TaskCanceledException or OperationCanceledException && ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase)) return "操作超时未完成";
+
         for (var type = ex.GetType(); type is not null; type = type.BaseType)
         {
             if (TypeNames.TryGetValue(type.Name, out var name)) return Refine(type.Name, name, ex.Message);
