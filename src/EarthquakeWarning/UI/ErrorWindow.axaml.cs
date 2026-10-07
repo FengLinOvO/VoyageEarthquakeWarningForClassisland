@@ -9,6 +9,7 @@ namespace Voyage.EarthquakeWarning.UI;
 public partial class ErrorWindow : Avalonia.Controls.Window
 {
     private static ErrorWindow? _current;
+    private ErrorReport? _report;
 
     public ErrorWindow()
     {
@@ -16,7 +17,7 @@ public partial class ErrorWindow : Avalonia.Controls.Window
 
         IssuesButton.Click += async (_, _) => await OpenIssuesAsync();
         LogFolderButton.Click += (_, _) => OpenLogFolder();
-        CloseButton.Click += (_, _) => Close();
+        CloseButton.Click += (_, _) => CloseReport();
         RestartButton.Click += (_, _) => RestartSoftware();
     }
 
@@ -35,6 +36,8 @@ public partial class ErrorWindow : Avalonia.Controls.Window
 
     private void SetReport(ErrorReport report)
     {
+        _report = report;
+
         FeedbackText.Text = ErrorReporter.FeedbackText(report.LogFile);
 
         DescriptionText.Inlines = new InlineCollection
@@ -54,6 +57,13 @@ public partial class ErrorWindow : Avalonia.Controls.Window
         LocationText.Text = report.Location;
         LocationSection.IsVisible = report.Location.Length > 0;
         CloseButton.IsVisible = !report.Fatal;
+    }
+
+    private void CloseReport()
+    {
+        if (_report is not null) ErrorReporter.Suppress(_report);
+
+        Close();
     }
 
     private void OnHeaderPressed(object? sender, PointerPressedEventArgs e) { if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e); }
