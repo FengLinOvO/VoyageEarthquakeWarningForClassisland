@@ -79,11 +79,16 @@ public sealed partial class EewService : BackgroundService
             await ws.ConnectAsync(new Uri(ApiUrl), token);
             token.ThrowIfCancellationRequested();
             SetStatus(ApiSource.Voyage, $"API连接于：{NowBeijing():yyyy-MM-dd HH:mm:ss}");
+            ErrorReporter.MarkRecovered("API");
             await ws.SendAsync(Encoding.UTF8.GetBytes(apiToken), WebSocketMessageType.Text, true, token);
             await ReceiveLoopAsync(ws, token);
         }
         catch (OperationCanceledException) { throw; }
-        catch (Exception ex) { SetStatus(ApiSource.Voyage, $"连接失败：{ex.Message}"); }
+        catch (Exception ex)
+        {
+            SetStatus(ApiSource.Voyage, $"连接失败：{ex.Message}");
+            ErrorReporter.Report(ex, "API", true);
+        }
     }
 
     private async Task ReceiveLoopAsync(ClientWebSocket ws, CancellationToken token)
@@ -97,9 +102,12 @@ public sealed partial class EewService : BackgroundService
 
             if (result.MessageType == WebSocketMessageType.Close)
             {
-                SetStatus(ApiSource.Voyage, string.IsNullOrWhiteSpace(result.CloseStatusDescription)
+                var reason = string.IsNullOrWhiteSpace(result.CloseStatusDescription)
                     ? $"连接已被服务端关闭（{result.CloseStatus}）"
-                    : $"连接已被服务端关闭：{result.CloseStatusDescription}");
+                    : $"连接已被服务端关闭：{result.CloseStatusDescription}";
+
+                SetStatus(ApiSource.Voyage, reason);
+                ErrorReporter.Report(new WebSocketException(reason), "API", true);
                 break;
             }
 
@@ -114,7 +122,14 @@ public sealed partial class EewService : BackgroundService
             EewEnvelope? envelope;
 
             try { envelope = JsonSerializer.Deserialize<EewEnvelope>(json); }
-            catch (JsonException ex) { Plugin.Current!.Settings.ApiRecentDataText = $"数据解析失败：{ex.Message}"; continue; }
+            catch (JsonException ex)
+            {
+                Plugin.Current!.Settings.ApiRecentDataText = $"数据解析失败：{ex.Message}";
+                ErrorReporter.Report(ex, "API", true);
+                continue;
+            }
+
+            ErrorReporter.MarkRecovered("API");
 
             if (envelope?.Data is null) continue;
 
@@ -126,7 +141,7 @@ public sealed partial class EewService : BackgroundService
 
             try { await _engine.ProcessAsync(d, false, token); }
             catch (OperationCanceledException) { }
-            catch (Exception ex) { ErrorReporter.Report(ex, "EewService.ProcessAsync"); }
+            catch (Exception ex) { ErrorReporter.Report(ex, "EewService.ProcessAsync", true); }
         }
     }
 
@@ -137,9 +152,17 @@ public sealed partial class EewService : BackgroundService
             await RequestMiuiAsync(token);
             await Task.Delay(MiuiPollInterval, token);
         }
-        catch (TaskCanceledException) when (!token.IsCancellationRequested) { SetStatus(ApiSource.Miui, "最近验证失败：请求超时"); }
+        catch (TaskCanceledException ex) when (!token.IsCancellationRequested)
+        {
+            SetStatus(ApiSource.Miui, "最近验证失败：请求超时");
+            ErrorReporter.Report(ex, "API", true);
+        }
         catch (OperationCanceledException) { throw; }
-        catch (Exception ex) { SetStatus(ApiSource.Miui, $"最近验证失败：{ex.Message}"); }
+        catch (Exception ex)
+        {
+            SetStatus(ApiSource.Miui, $"最近验证失败：{ex.Message}");
+            ErrorReporter.Report(ex, "API", true);
+        }
     }
 
     private async Task RequestMiuiAsync(CancellationToken token)
@@ -151,11 +174,19 @@ public sealed partial class EewService : BackgroundService
         var json = await response.Content.ReadAsStringAsync(token);
         token.ThrowIfCancellationRequested();
         SetStatus(ApiSource.Miui, $"最近验证时间：{NowBeijing():yyyy-MM-dd HH:mm:ss}");
+        ErrorReporter.MarkRecovered("API");
 
         MiuiEnvelope? envelope;
 
         try { envelope = JsonSerializer.Deserialize<MiuiEnvelope>(json); }
-        catch (JsonException ex) { Plugin.Current!.Settings.ApiRecentDataText = $"数据解析失败：{ex.Message}"; return; }
+        catch (JsonException ex)
+        {
+            Plugin.Current!.Settings.ApiRecentDataText = $"数据解析失败：{ex.Message}";
+            ErrorReporter.Report(ex, "API", true);
+            return;
+        }
+
+        ErrorReporter.MarkRecovered("API");
 
         var record = envelope?.Data?.FirstOrDefault();
         if (record is null) return;
@@ -185,6 +216,6 @@ public sealed partial class EewService : BackgroundService
 
         try { await _engine.ProcessAsync(d, false, token); }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { ErrorReporter.Report(ex, "EewService.ProcessAsync"); }
+        catch (Exception ex) { ErrorReporter.Report(ex, "EewService.ProcessAsync", true); }
     }
 }
