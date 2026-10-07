@@ -12,7 +12,7 @@
 
 ## API 源
 
-插件提供两种 API 源，二者提供的内容完全一致：
+插件提供两种 API 源可选择，二者提供的内容完全一致：
 
 - Voyage Project API：由插件作者开发的 API 服务，采用 WebSocket 连接，需要填写 API Token 鉴权。
 - MIUI API：采用 POST 请求，无需鉴权，开箱即用。受限于 MIUI 预警源返回内容较多及网络因素，此方式的预警相较于 WebSocket 连接可能存在 1-3 秒延迟。
@@ -34,13 +34,11 @@ API主页：https://api.odysphere.tech/
 ## 示例
 
 ### 程序独立UI预警
-
 ![程序独立UI预警·倒计时](https://raw.githubusercontent.com/FengLinOvO/VoyageEarthquakeWarningForClassisland/main/src/EarthquakeWarning/Assets/Images/uieew_orange.png)
 
 ![程序独立UI预警·已到达](https://raw.githubusercontent.com/FengLinOvO/VoyageEarthquakeWarningForClassisland/main/src/EarthquakeWarning/Assets/Images/uiari_orange.png)
 
 ### ClassIsland原生横幅预警
-
 ![ClassIsland原生横幅预警·倒计时](https://raw.githubusercontent.com/FengLinOvO/VoyageEarthquakeWarningForClassisland/main/src/EarthquakeWarning/Assets/Images/eew_orange.png)
 
 ![ClassIsland原生横幅预警·已到达](https://raw.githubusercontent.com/FengLinOvO/VoyageEarthquakeWarningForClassisland/main/src/EarthquakeWarning/Assets/Images/ari_orange.png)
@@ -48,31 +46,26 @@ API主页：https://api.odysphere.tech/
 ### 独立错误提示
 
 #### 崩溃性错误
-
 ![崩溃性错误](https://raw.githubusercontent.com/FengLinOvO/VoyageEarthquakeWarningForClassisland/main/src/EarthquakeWarning/Assets/Images/bug_ui_2.png)
 
 #### 非崩溃性错误
-
 ![非崩溃性错误](https://raw.githubusercontent.com/FengLinOvO/VoyageEarthquakeWarningForClassisland/main/src/EarthquakeWarning/Assets/Images/bug_ui_1.png)
 
 ## 功能特点
 
-- 接收中国地震预警网地震预警信息
-- 本地预估烈度与震中距计算
-- ClassIsland 原生横幅预警
-- 插件独立地震预警界面
-- 蓝色、黄色、橙色、红色预警分级
-- 内置地震预警音频与更新报音频
-- 自动定位与手动经纬度
-- 模拟预警
-- 置顶提醒、强制音量
+- 接收中国地震预警网地震预警信息进行本地预估烈度与震中距计算
+- ClassIsland原生横幅预警与插件独立地震预警界面可选
+- 依据《DB/T 113.1—2026 地震预警信息发布 第1部分：地震预警级别与标识》细分优化后的蓝色（无感）、蓝色（有感）、黄色、橙色、红色五个等级的预警分级
+- 内置完善的地震预警音频与自动定位
+- 完善的模拟预警与相关标识
+- 由插件自身控制的高美观性的独立错误提示
 
 ## 免责声明
 
-- 地震预警信息由中国地震台网中心产出并下发，API由 Voyage Project API 与 MIUI API 提供；作者不对地震预警信息的准确性、有效性等作任何承诺与保证，对于使用本API造成的一切后果与作者无关。
-- 本插件仅分发地震预警信息，并非地震预测。
+- 地震预警信息由中国地震台网中心产出并下发，通过 Voyage Project API 或 MIUI API 接收；作者不对地震预警信息的准确性、有效性等作任何承诺与保证，对于使用本API造成的一切后果与作者无关。
+- 本插件仅通过所接入API获取到的地震预警信息进行高可视化展示，非地震预测。
 - 作者对因信息延迟、误报或漏报所造成的任何损失不承担法律责任，请以官方发布信息为准。
-- 本项目开发采用Vibe Coding，发布前经过人工审查。
+- 本项目开发采用Vibe Coding，发布前经过人工审查，欢迎提出建议。
 
 ## 许可证
 
