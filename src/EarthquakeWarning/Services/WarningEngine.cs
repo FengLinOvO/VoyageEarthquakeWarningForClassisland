@@ -212,7 +212,7 @@ public sealed class WarningEngine
             }
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { ErrorReporter.Report(ex, "WarningEngine.RunSimulationAsync"); }
+        catch (Exception ex) { ErrorReporter.Report(ex, "WarningEngine.RunSimulationAsync", true); }
         finally
         {
             if (ReferenceEquals(_simulation, cts)) _simulation = null;
@@ -284,7 +284,7 @@ public sealed class WarningEngine
                             }
                         }
                     }
-                    catch (Exception ex) { ErrorReporter.Report(ex, "WarningEngine.Ticker"); }
+                    catch (Exception ex) { ErrorReporter.Report(ex, "WarningEngine.Ticker", true); }
 
                     await Task.Delay(200, parentToken);
                 }
