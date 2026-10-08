@@ -215,7 +215,7 @@ public sealed class AudioService
             endpoint.AudioEndpointVolume.MasterVolumeLevelScalar = 1.0f;
             _lastVolumeRestoreDeadline = DateTime.UtcNow.AddSeconds(10);
         }
-        catch { }
+        catch (Exception ex) { ErrorReporter.Report(ex, "AudioService.ForceMasterVolume", true); }
     }
 
     public void RestoreMasterVolume()
@@ -230,7 +230,7 @@ public sealed class AudioService
 
             endpoint.AudioEndpointVolume.MasterVolumeLevelScalar = _originalMasterVolume.Value;
         }
-        catch { }
+        catch (Exception ex) { ErrorReporter.Report(ex, "AudioService.RestoreMasterVolume", true); }
 
         _originalMasterVolume = null;
     }
