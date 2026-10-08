@@ -3,7 +3,7 @@
         x:Class="Voyage.EarthquakeWarning.UI.ErrorWindow"
         Title="插件运行错误"
         Width="780"
-        Height="560"
+        Height="540"
         MinWidth="560"
         MinHeight="400"
         Background="#17171B"
@@ -11,23 +11,26 @@
         CanResize="True"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterScreen">
-  <Border Background="#17171B"
-          BorderBrush="#33333A"
-          BorderThickness="1"
-          CornerRadius="10">
+  <Viewbox Stretch="Uniform">
+    <Border Width="780"
+            Height="540"
+            Background="#17171B"
+            BorderBrush="#33333A"
+            BorderThickness="1"
+            CornerRadius="10"
+            PointerPressed="OnHeaderPressed">
     <Grid RowDefinitions="Auto,Auto,1*,Auto"
           Margin="24">
       <StackPanel Grid.Row="0"
                   Orientation="Horizontal"
                   Spacing="12"
-                  Background="#17171B"
-                  PointerPressed="OnHeaderPressed">
+                  Background="#17171B">
         <Border Width="14"
                 Height="14"
                 Background="#E0464B"
                 CornerRadius="2"
                 VerticalAlignment="Center"/>
-        <TextBlock Text="ClassIsland插件在运行中遇到错误"
+        <TextBlock Text="ClassIsland地震预警插件在运行中遇到错误"
                    FontSize="26"
                    FontWeight="Bold"
                    Foreground="#F2F2F4"
@@ -113,5 +116,6 @@
                 Foreground="#FFFFFF"/>
       </StackPanel>
     </Grid>
-  </Border>
+    </Border>
+  </Viewbox>
 </Window>
