@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls.Documents;
 using Avalonia.Input;
 using Avalonia.Media;
@@ -21,13 +22,41 @@ public partial class ErrorWindow : Avalonia.Controls.Window
         RestartButton.Click += (_, _) => RestartSoftware();
     }
 
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+        SizeToScreenPrimary();
+    }
+
+    private static void SizeToScreenPrimary()
+    {
+        var current = _current;
+
+        if (current is null) return;
+
+        var screen = current.Screens?.Primary;
+
+        if (screen is null) return;
+
+        var availWidth = screen.WorkingArea.Width / screen.Scaling;
+        var availHeight = screen.WorkingArea.Height / screen.Scaling;
+
+        current.Width = Math.Min(Math.Max(current.MinWidth, availWidth * 0.5), availWidth);
+        current.Height = Math.Min(Math.Max(current.MinHeight, availHeight * 0.55), availHeight);
+    }
+
     public static void ShowReport(ErrorReport report)
     {
         if (_current is null)
         {
             _current = new ErrorWindow();
             _current.Closed += (_, _) => _current = null;
+            SizeToScreenPrimary();
             _current.Show();
+        }
+        else
+        {
+            SizeToScreenPrimary();
         }
 
         _current.SetReport(report);
