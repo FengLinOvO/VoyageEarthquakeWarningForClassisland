@@ -1,5 +1,5 @@
 name: Build and Release ClassIsland Plugin
-
+run-name: 发布 ${{ github.ref_name }} 版本
 on:
   push:
     tags:
